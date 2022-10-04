@@ -2,6 +2,7 @@ import type { AWS } from '@serverless/typescript';
 
 import hello from '@functions/hello';
 import Authorizer from "@functions/Authorizer";
+import Register from "@functions/Register";
 
 const serverlessConfiguration: AWS = {
   service: 'udatube',
@@ -35,7 +36,7 @@ const serverlessConfiguration: AWS = {
     },
   },
   // import the function via paths
-  functions: { hello, Authorizer },
+  functions: { hello, Authorizer, Register },
   package: { individually: true },
   custom: {
     esbuild: {
@@ -51,6 +52,45 @@ const serverlessConfiguration: AWS = {
   },
   resources: {
     Resources: {
+      RegisterRole: {
+        Type: 'AWS::IAM::Role',
+        Properties: {
+          RoleName: 'RegisterRole',
+          AssumeRolePolicyDocument: {
+            Version: '2012-10-17',
+            Statement: [{
+              Effect: 'Allow',
+              Principal: {
+                Service: 'lambda.amazonaws.com',
+              },
+              Action: 'sts:AssumeRole',
+            }],
+          },
+          Policies: [{
+            PolicyName: 'RegisterPolicy',
+            PolicyDocument: {
+              Version: '2012-10-17',
+              Statement: [{
+                Effect: 'Allow',
+                Action: [
+                  'dynamodb:PutItem',
+                ],
+                Resource: [
+                  'arn:aws:dynamodb:us-east-1:*:table/${self:provider.environment.USERS_TABLE}',
+                ],
+              }, {
+                Effect: 'Allow',
+                Action: [
+                  's3:PutObject',
+                ],
+                Resource: [
+                  'arn:aws:s3:::${self:provider.environment.AVATARS_BUCKET}/*',
+                ],
+              }],
+            },
+          }],
+        },
+      },
       UsersDynamoDBTable: {
         Type: 'AWS::DynamoDB::Table',
         Properties: {
@@ -91,6 +131,37 @@ const serverlessConfiguration: AWS = {
             AttributeName: 'userId',
             KeyType: 'RANGE',
           }],
+        },
+      },
+      AvatarsS3Bucket: {
+        Type: 'AWS::S3::Bucket',
+        Properties: {
+          BucketName: '${self:provider.environment.AVATARS_BUCKET}',
+          CorsConfiguration: {
+            CorsRules: [{
+              AllowedHeaders: ['*'],
+              AllowedMethods: ['GET', 'PUT', 'POST', 'DELETE'],
+              AllowedOrigins: ['*'],
+              MaxAge: 3000,
+            }],
+          },
+        },
+      },
+      AvatarsS3BucketPolicy: {
+        Type: 'AWS::S3::BucketPolicy',
+        Properties: {
+          PolicyDocument: {
+            Id: '${self:provider.environment.AVATARS_BUCKET}-policy',
+            Version: '2012-10-17',
+            Statement: [{
+              Sid: 'PublicReadForGetBucketObjects',
+              Effect: 'Allow',
+              Principal: '*',
+              Action: 's3:GetObject',
+              Resource: 'arn:aws:s3:::${self:provider.environment.AVATARS_BUCKET}/*',
+            }],
+          },
+          Bucket: '${self:provider.environment.AVATARS_BUCKET}',
         },
       },
     },
