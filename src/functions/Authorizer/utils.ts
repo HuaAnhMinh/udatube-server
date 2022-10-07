@@ -1,6 +1,7 @@
 import { JwtHeader, decode, verify } from 'jsonwebtoken'
 import JwksClient from "@functions/Authorizer/JwksClient";
 import {APIGatewayProxyEvent} from "aws-lambda";
+import { createHash } from 'crypto';
 
 type JwtPayload = {
   iss?: string;
@@ -53,5 +54,5 @@ export const getUserId = (event: APIGatewayProxyEvent): string => {
   const jwtToken = split[1];
 
   const decodedJwt = decode(jwtToken) as JwtPayload
-  return decodedJwt.sub;
+  return createHash('sha256').update(decodedJwt.sub).digest('hex');
 }

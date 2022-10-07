@@ -1,8 +1,9 @@
-import type { AWS } from '@serverless/typescript';
+import type {AWS} from '@serverless/typescript';
 
 import hello from '@functions/hello';
 import Authorizer from "@functions/Authorizer";
 import Register from "@functions/Register";
+import {defaultLogStatements} from "./src/roles/roles";
 
 const serverlessConfiguration: AWS = {
   service: 'udatube',
@@ -23,6 +24,9 @@ const serverlessConfiguration: AWS = {
       minimumCompressionSize: 1024,
       shouldStartNameWithService: true,
     },
+    logs: {
+      restApi: true,
+    },
     stage: '${opt:stage, "dev"}',
     environment: {
       AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1',
@@ -36,8 +40,8 @@ const serverlessConfiguration: AWS = {
     },
   },
   // import the function via paths
-  functions: { hello, Authorizer, Register },
-  package: { individually: true },
+  functions: {hello, Authorizer, Register},
+  package: {individually: true},
   custom: {
     esbuild: {
       bundle: true,
@@ -45,7 +49,7 @@ const serverlessConfiguration: AWS = {
       sourcemap: true,
       exclude: ['aws-sdk'],
       target: 'node14',
-      define: { 'require.resolve': undefined },
+      define: {'require.resolve': undefined},
       platform: 'node',
       concurrency: 10,
     },
@@ -70,10 +74,11 @@ const serverlessConfiguration: AWS = {
             PolicyName: 'RegisterPolicy',
             PolicyDocument: {
               Version: '2012-10-17',
-              Statement: [{
+              Statement: [...defaultLogStatements, {
                 Effect: 'Allow',
                 Action: [
                   'dynamodb:PutItem',
+                  'dynamodb:Scan',
                 ],
                 Resource: [
                   'arn:aws:dynamodb:us-east-1:*:table/${self:provider.environment.USERS_TABLE}',

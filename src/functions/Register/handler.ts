@@ -5,6 +5,7 @@ import {createUser} from "../../businessLayer/user";
 
 const Register: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
   const userId = getUserId(event);
+  console.log('Registering user with id: ', userId);
   try {
     await createUser(userId);
     return {
@@ -15,10 +16,18 @@ const Register: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (ev
     };
   }
   catch (e) {
-    console.log(e);
+    console.log(e.message);
+    if (e.message === 'User already exists') {
+      return {
+        statusCode: 409,
+        body: JSON.stringify({
+          message: e.message,
+        }),
+      };
+    }
     return {
       statusCode: 500,
-      body: 'Internal Server Error',
+      body: 'Internal server error',
     };
   }
 };

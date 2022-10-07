@@ -1,4 +1,5 @@
 import * as AWS from 'aws-sdk';
+import User from "../models/user";
 
 const docClient = new AWS.DynamoDB.DocumentClient();
 const s3 = new AWS.S3({
@@ -8,12 +9,23 @@ const USERS_TABLE = process.env.USERS_TABLE;
 const AVATARS_BUCKET = process.env.AVATARS_BUCKET;
 
 export const createUser = async (id: string) => {
-  const idNumber = id.split('|')[1];
-  const defaultUsername = `user-${idNumber}`;
+  const user = await docClient.scan({
+    TableName: USERS_TABLE,
+    FilterExpression: 'id = :id',
+    ExpressionAttributeValues: {
+      ':id': id,
+    }
+  }).promise();
+  console.log(`Count of users with id ${id}: ${user.Count}`);
+  if (user.Count > 0) {
+    throw new Error('User already exists');
+  }
+
+  const defaultUsername = `user-${id}`;
   await docClient.put({
     TableName: USERS_TABLE,
     Item: {
-      id: idNumber,
+      id: id,
       username: defaultUsername,
     },
   }).promise();
@@ -22,9 +34,23 @@ export const createUser = async (id: string) => {
   const base64DefaultAvatar = Buffer.from(defaultAvatar.replace(/^data:image\/\w+;base64,/, ""), 'base64');
   await s3.putObject({
     Bucket: AVATARS_BUCKET,
-    Key: `${idNumber}.png`,
+    Key: `${id}.png`,
     ContentEncoding: 'base64',
     ContentType: 'image/png',
     Body: base64DefaultAvatar,
   }).promise();
+
+  console.log(`User with id ${id} created successfully`);
+};
+
+export const getUser = async (id: string, username: string) => {
+  const result = await docClient.get({
+    TableName: USERS_TABLE,
+    Key: {
+      id,
+      username,
+    },
+  }).promise();
+
+  return result.Item as User;
 };
