@@ -1,4 +1,4 @@
-export const defaultLogStatements = [{
+const LogRole = [{
   Action: [
     "logs:CreateLogStream",
     "logs:CreateLogGroup"
@@ -16,3 +16,5 @@ export const defaultLogStatements = [{
   ],
   Effect: "Allow"
 }];
+
+export default LogRole;

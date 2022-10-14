@@ -1,6 +1,13 @@
-type User = {
+export type User = {
   id: string;
   username: string;
+  subscribedChannels: string[];
+  videos: string[];
+  totalSubscribers: number;
 };
 
-export default User;
+export type ShortFormUser = {
+  id: string;
+  username: string;
+  totalSubscribers: number;
+};

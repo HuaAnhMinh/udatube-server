@@ -3,7 +3,11 @@ import type {AWS} from '@serverless/typescript';
 import hello from '@functions/hello';
 import Authorizer from "@functions/Authorizer";
 import Register from "@functions/Register";
-import {defaultLogStatements} from "./src/roles/roles";
+import ViewProfile from "@functions/ViewProfile";
+import ViewProfileRole from "./src/roles/ViewProfileRole";
+import RegisterRole from "./src/roles/RegisterRole";
+import SearchUser from "@functions/SearchUser";
+import SearchUserRole from "./src/roles/SearchUserRole";
 
 const serverlessConfiguration: AWS = {
   service: 'udatube',
@@ -40,7 +44,7 @@ const serverlessConfiguration: AWS = {
     },
   },
   // import the function via paths
-  functions: {hello, Authorizer, Register},
+  functions: {hello, Authorizer, Register, ViewProfile, SearchUser},
   package: {individually: true},
   custom: {
     esbuild: {
@@ -56,46 +60,9 @@ const serverlessConfiguration: AWS = {
   },
   resources: {
     Resources: {
-      RegisterRole: {
-        Type: 'AWS::IAM::Role',
-        Properties: {
-          RoleName: 'RegisterRole',
-          AssumeRolePolicyDocument: {
-            Version: '2012-10-17',
-            Statement: [{
-              Effect: 'Allow',
-              Principal: {
-                Service: 'lambda.amazonaws.com',
-              },
-              Action: 'sts:AssumeRole',
-            }],
-          },
-          Policies: [{
-            PolicyName: 'RegisterPolicy',
-            PolicyDocument: {
-              Version: '2012-10-17',
-              Statement: [...defaultLogStatements, {
-                Effect: 'Allow',
-                Action: [
-                  'dynamodb:PutItem',
-                  'dynamodb:Scan',
-                ],
-                Resource: [
-                  'arn:aws:dynamodb:us-east-1:*:table/${self:provider.environment.USERS_TABLE}',
-                ],
-              }, {
-                Effect: 'Allow',
-                Action: [
-                  's3:PutObject',
-                ],
-                Resource: [
-                  'arn:aws:s3:::${self:provider.environment.AVATARS_BUCKET}/*',
-                ],
-              }],
-            },
-          }],
-        },
-      },
+      RegisterRole,
+      ViewProfileRole,
+      SearchUserRole,
       UsersDynamoDBTable: {
         Type: 'AWS::DynamoDB::Table',
         Properties: {

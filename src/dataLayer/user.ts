@@ -1,5 +1,5 @@
 import * as AWS from 'aws-sdk';
-import User from "../models/user";
+import {User, ShortFormUser} from "../models/user";
 
 const docClient = new AWS.DynamoDB.DocumentClient();
 const s3 = new AWS.S3({
@@ -9,24 +9,15 @@ const USERS_TABLE = process.env.USERS_TABLE;
 const AVATARS_BUCKET = process.env.AVATARS_BUCKET;
 
 export const createUser = async (id: string) => {
-  const user = await docClient.scan({
-    TableName: USERS_TABLE,
-    FilterExpression: 'id = :id',
-    ExpressionAttributeValues: {
-      ':id': id,
-    }
-  }).promise();
-  console.log(`Count of users with id ${id}: ${user.Count}`);
-  if (user.Count > 0) {
-    throw new Error('User already exists');
-  }
-
-  const defaultUsername = `user-${id}`;
+  const defaultUsername = `user-${id.substring(0, 8)}`;
   await docClient.put({
     TableName: USERS_TABLE,
     Item: {
       id: id,
       username: defaultUsername,
+      subscribedChannels: [],
+      videos: [],
+      totalSubscribers: 0,
     },
   }).promise();
 
@@ -43,14 +34,83 @@ export const createUser = async (id: string) => {
   console.log(`User with id ${id} created successfully`);
 };
 
-export const getUser = async (id: string, username: string) => {
-  const result = await docClient.get({
+export const getUserById = async (id: string) => {
+  const result = await docClient.scan({
     TableName: USERS_TABLE,
-    Key: {
-      id,
-      username,
+    FilterExpression: 'id = :id',
+    ExpressionAttributeValues: {
+      ':id': id,
     },
   }).promise();
 
-  return result.Item as User;
+  if (result.Count === 0) {
+    return null;
+  }
+
+  return result.Items[0] as User;
 };
+
+export const getUsersByUsername = async (username: string) => {
+  const result = await docClient.scan({
+    TableName: USERS_TABLE,
+    FilterExpression: 'contains(username, :username)',
+    ExpressionAttributeValues: {
+      ':username': username,
+    },
+    ProjectionExpression: 'id, username',
+  }).promise();
+
+  return result.Items as ShortFormUser[];
+};
+
+export const subscribeToUser = async (userId: string, username: string, targetUserId: string, targetUsername: string) => {
+  await docClient.update({
+    TableName: USERS_TABLE,
+    Key: {
+      id: userId,
+      username: username,
+    },
+    UpdateExpression: 'SET subscribedChannels = list_append(subscribedChannels, :targetUserId)',
+    ExpressionAttributeValues: {
+      ':targetUserId': [targetUserId],
+    },
+  }).promise();
+
+  await docClient.update({
+    TableName: USERS_TABLE,
+    Key: {
+      id: targetUserId,
+      username: targetUsername,
+    },
+    UpdateExpression: 'SET totalSubscribers = totalSubscribers + :increment',
+    ExpressionAttributeValues: {
+      ':increment': 1,
+    },
+  }).promise();
+};
+
+export const unsubscribeFromUser = async (userId: string, username: string, targetUserId: string, targetUsername: string) => {
+  await docClient.update({
+    TableName: USERS_TABLE,
+    Key: {
+      id: userId,
+      username: username,
+    },
+    UpdateExpression: 'SET subscribedChannels = list_remove(subscribedChannels, :targetUserId)',
+    ExpressionAttributeValues: {
+      ':targetUserId': targetUserId,
+    },
+  }).promise();
+
+  await docClient.update({
+    TableName: USERS_TABLE,
+    Key: {
+      id: targetUserId,
+      username: targetUsername,
+    },
+    UpdateExpression: 'SET totalSubscribers = totalSubscribers - :decrement',
+    ExpressionAttributeValues: {
+      ':decrement': 1,
+    },
+  }).promise();
+}
