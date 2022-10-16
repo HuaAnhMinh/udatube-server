@@ -10,6 +10,8 @@ import SearchUser from "@functions/SearchUser";
 import SearchUserRole from "./src/roles/SearchUserRole";
 import SubscribeChannel from "@functions/SubscribeChannel";
 import SubscribeChannelRole from "./src/roles/SubscribeChannelRole";
+import UnsubscribeChannel from "@functions/UnsubscribeChannel";
+import UnsubscribeChannelRole from "./src/roles/UnsubscribeChannelRole";
 
 const serverlessConfiguration: AWS = {
   service: 'udatube',
@@ -46,7 +48,7 @@ const serverlessConfiguration: AWS = {
     },
   },
   // import the function via paths
-  functions: {hello, Authorizer, Register, ViewProfile, SearchUser, SubscribeChannel},
+  functions: {hello, Authorizer, Register, ViewProfile, SearchUser, SubscribeChannel, UnsubscribeChannel},
   package: {individually: true},
   custom: {
     esbuild: {
@@ -66,6 +68,7 @@ const serverlessConfiguration: AWS = {
       ViewProfileRole,
       SearchUserRole,
       SubscribeChannelRole,
+      UnsubscribeChannelRole,
       UsersDynamoDBTable: {
         Type: 'AWS::DynamoDB::Table',
         Properties: {

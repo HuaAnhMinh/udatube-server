@@ -90,15 +90,18 @@ export const subscribeToUser = async (userId: string, username: string, targetUs
 };
 
 export const unsubscribeFromUser = async (userId: string, username: string, targetUserId: string, targetUsername: string) => {
+  const user = await getUserById(userId);
+  const subscribedChannels = user.subscribedChannels.filter((id) => id !== targetUserId);
+
   await docClient.update({
     TableName: USERS_TABLE,
     Key: {
       id: userId,
       username: username,
     },
-    UpdateExpression: 'SET subscribedChannels = list_remove(subscribedChannels, :targetUserId)',
+    UpdateExpression: 'SET subscribedChannels = :subscribedChannels',
     ExpressionAttributeValues: {
-      ':targetUserId': targetUserId,
+      ':subscribedChannels': subscribedChannels,
     },
   }).promise();
 
