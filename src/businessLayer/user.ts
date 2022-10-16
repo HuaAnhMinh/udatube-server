@@ -5,6 +5,8 @@ import {
   subscribeToUser,
   unsubscribeFromUser
 } from "../dataLayer/user";
+import RegisterErrors from "../errors/RegisterErrors";
+import SubscribeChannelErrors from "../errors/SubscribeChannelErrors";
 
 export const getProfile = async (id: string) => {
   return await getUserById(id);
@@ -13,7 +15,7 @@ export const getProfile = async (id: string) => {
 export const createUser = async (id: string) => {
   const user = await getProfile(id);
   if (user) {
-    throw new Error('User already exists');
+    throw new Error(RegisterErrors.USER_ALREADY_EXISTS);
   }
   return await addUserToDB(id);
 };
@@ -23,17 +25,25 @@ export const searchUsers = async (username: string) => {
 };
 
 export const subscribeToChannel = async (userId: string, channelId: string) => {
+  if (userId === channelId) {
+    throw new Error(SubscribeChannelErrors.CANNOT_SUBSCRIBE_SAME_ID);
+  }
+
   const user = await getProfile(userId);
 
   if (!user) {
-    throw new Error(`User with id ${userId} not found`);
+    throw new Error(SubscribeChannelErrors.USER_NOT_FOUND);
   }
+
+  console.log('User found: ', user);
 
   const targetUser = await getProfile(channelId);
 
   if (!targetUser) {
-    throw new Error(`Target user with id ${channelId} not found`);
+    throw new Error(SubscribeChannelErrors.TARGET_NOT_FOUND);
   }
+
+  console.log('Target user found: ', targetUser);
 
   if (user.subscribedChannels.includes(channelId)) {
     return;
@@ -43,6 +53,10 @@ export const subscribeToChannel = async (userId: string, channelId: string) => {
 };
 
 export const unsubscribeFromChannel = async (userId: string, channelId: string) => {
+  if (userId === channelId) {
+    throw new Error('User cannot unsubscribe from himself');
+  }
+
   const user = await getProfile(userId);
 
   if (!user) {

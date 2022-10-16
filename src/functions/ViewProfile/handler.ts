@@ -1,6 +1,7 @@
 import {APIGatewayProxyEvent, APIGatewayProxyResult, Handler} from "aws-lambda";
 import {middyfy} from "@libs/lambda";
 import {getProfile} from "../../businessLayer/user";
+import ViewProfileErrors from "../../errors/ViewProfileErrors";
 
 const ViewProfile: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
   const id = event.pathParameters.id;
@@ -20,7 +21,7 @@ const ViewProfile: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async 
   return {
     statusCode: 404,
     body: JSON.stringify({
-      message: 'User not found',
+      message: ViewProfileErrors.USER_NOT_FOUND,
     }),
   };
 };
