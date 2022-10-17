@@ -1,5 +1,6 @@
 import {
-  createUser as addUserToDB,
+  changeUsername,
+  createUser as addUserToDB, generatePresignedUrlForAvatar,
   getUserById,
   getUsersByUsername,
   subscribeToUser,
@@ -8,6 +9,7 @@ import {
 import RegisterErrors from "../errors/RegisterErrors";
 import SubscribeChannelErrors from "../errors/SubscribeChannelErrors";
 import UnsubscribeChannelErrors from "../errors/UnsubscribeChannelErrors";
+import ChangeUsernameErrors from "../errors/ChangeUsernameErrors";
 
 export const getProfile = async (id: string) => {
   return await getUserById(id);
@@ -46,7 +48,7 @@ export const subscribeToChannel = async (userId: string, channelId: string) => {
     return;
   }
 
-  return await subscribeToUser(userId, user.username, channelId, targetUser.username);
+  return await subscribeToUser(userId, channelId);
 };
 
 export const unsubscribeFromChannel = async (userId: string, channelId: string) => {
@@ -70,5 +72,22 @@ export const unsubscribeFromChannel = async (userId: string, channelId: string) 
     return;
   }
 
-  return await unsubscribeFromUser(userId, user.username, channelId, targetUser.username);
+  return await unsubscribeFromUser(userId, channelId);
+};
+
+export const editUsername = async (userId: string, newUsername: string) => {
+  const user = await getProfile(userId);
+  if (!user) {
+    throw new Error(ChangeUsernameErrors.USER_NOT_FOUND);
+  }
+
+  if (user.username === newUsername) {
+    return;
+  }
+
+  await changeUsername(userId, newUsername);
+};
+
+export const changeAvatar = async (userId: string) => {
+  return await generatePresignedUrlForAvatar(userId);
 }

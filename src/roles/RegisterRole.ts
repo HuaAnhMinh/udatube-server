@@ -22,7 +22,7 @@ const RegisterRole = {
           Effect: 'Allow',
           Action: [
             'dynamodb:PutItem',
-            'dynamodb:Scan',
+            'dynamodb:GetItem',
           ],
           Resource: [
             'arn:aws:dynamodb:us-east-1:*:table/${self:provider.environment.USERS_TABLE}',

@@ -1,9 +1,9 @@
 import LogRole from "./LogRole";
 
-const ViewProfileRole = {
+const ChangeUsernameRole = {
   Type: 'AWS::IAM::Role',
   Properties: {
-    RoleName: 'ViewProfileRole',
+    RoleName: 'ChangeUsernameRole',
     AssumeRolePolicyDocument: {
       Version: '2012-10-17',
       Statement: [{
@@ -15,21 +15,22 @@ const ViewProfileRole = {
       }],
     },
     Policies: [{
-      PolicyName: 'ViewProfilePolicy',
+      PolicyName: 'ChangeUsernameRolePolicy',
       PolicyDocument: {
         Version: '2012-10-17',
         Statement: [...LogRole, {
           Effect: 'Allow',
           Action: [
             'dynamodb:GetItem',
+            'dynamodb:UpdateItem',
           ],
           Resource: [
             'arn:aws:dynamodb:us-east-1:*:table/${self:provider.environment.USERS_TABLE}',
           ],
-        }],
+        }]
       },
     }],
   },
 };
 
-export default ViewProfileRole;
+export default ChangeUsernameRole;

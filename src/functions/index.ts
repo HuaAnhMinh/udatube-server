@@ -5,3 +5,5 @@ export { default as ViewProfile } from './ViewProfile';
 export { default as SearchUser } from './SearchUser';
 export { default as SubscribeChannel } from './SubscribeChannel';
 export { default as UnsubscribeChannel } from './UnsubscribeChannel';
+export { default as ChangeUsername } from './ChangeUsername';
+export { default as ChangeAvatar } from './ChangeAvatar';

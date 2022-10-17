@@ -21,7 +21,7 @@ const UnsubscribeChannelRole = {
         Statement: [...LogRole, {
           Effect: 'Allow',
           Action: [
-            'dynamodb:Scan',
+            'dynamodb:GetItem',
             'dynamodb:UpdateItem',
           ],
           Resource: [

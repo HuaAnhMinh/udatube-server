@@ -12,6 +12,10 @@ import SubscribeChannel from "@functions/SubscribeChannel";
 import SubscribeChannelRole from "./src/roles/SubscribeChannelRole";
 import UnsubscribeChannel from "@functions/UnsubscribeChannel";
 import UnsubscribeChannelRole from "./src/roles/UnsubscribeChannelRole";
+import ChangeUsername from '@functions/ChangeUsername';
+import ChangeUsernameRole from "./src/roles/ChangeUsernameRole";
+import ChangeAvatarRole from "./src/roles/ChangeAvatarRole";
+import ChangeAvatar from "@functions/ChangeAvatar";
 
 const serverlessConfiguration: AWS = {
   service: 'udatube',
@@ -45,10 +49,21 @@ const serverlessConfiguration: AWS = {
       VIDEOS_BUCKET: 'udatube-videos-${self:provider.stage}',
       THUMBNAILS_BUCKET: 'udatube-thumbnails-${self:provider.stage}',
       JWKS_URI: 'https://huaanhminh.us.auth0.com/.well-known/jwks.json',
+      AVATAR_SIGNED_URL_EXPIRATION: '300',
     },
   },
   // import the function via paths
-  functions: {hello, Authorizer, Register, ViewProfile, SearchUser, SubscribeChannel, UnsubscribeChannel},
+  functions: {
+    hello,
+    Authorizer,
+    Register,
+    ViewProfile,
+    SearchUser,
+    SubscribeChannel,
+    UnsubscribeChannel,
+    ChangeUsername,
+    ChangeAvatar,
+  },
   package: {individually: true},
   custom: {
     esbuild: {
@@ -69,6 +84,8 @@ const serverlessConfiguration: AWS = {
       SearchUserRole,
       SubscribeChannelRole,
       UnsubscribeChannelRole,
+      ChangeUsernameRole,
+      ChangeAvatarRole,
       UsersDynamoDBTable: {
         Type: 'AWS::DynamoDB::Table',
         Properties: {
@@ -77,16 +94,10 @@ const serverlessConfiguration: AWS = {
           AttributeDefinitions: [{
             AttributeName: 'id',
             AttributeType: 'S',
-          }, {
-            AttributeName: 'username',
-            AttributeType: 'S',
           }],
           KeySchema: [{
             AttributeName: 'id',
             KeyType: 'HASH',
-          }, {
-            AttributeName: 'username',
-            KeyType: 'RANGE',
           }],
         },
       },

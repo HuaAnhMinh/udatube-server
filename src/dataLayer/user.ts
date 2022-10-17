@@ -1,5 +1,5 @@
 import * as AWS from 'aws-sdk';
-import {User, ShortFormUser} from "../models/user";
+import {ShortFormUser, User} from "../models/user";
 
 const docClient = new AWS.DynamoDB.DocumentClient();
 const s3 = new AWS.S3({
@@ -7,6 +7,7 @@ const s3 = new AWS.S3({
 });
 const USERS_TABLE = process.env.USERS_TABLE;
 const AVATARS_BUCKET = process.env.AVATARS_BUCKET;
+const AVATAR_SIGNED_URL_EXPIRATION = process.env.AVATAR_SIGNED_URL_EXPIRATION;
 
 export const createUser = async (id: string) => {
   const defaultUsername = `user-${id.substring(0, 8)}`;
@@ -35,19 +36,15 @@ export const createUser = async (id: string) => {
 };
 
 export const getUserById = async (id: string) => {
-  const result = await docClient.scan({
+  const result = await docClient.get({
     TableName: USERS_TABLE,
-    FilterExpression: 'id = :id',
-    ExpressionAttributeValues: {
-      ':id': id,
+    Key: {
+      id,
     },
+    ConsistentRead: true,
   }).promise();
 
-  if (result.Count === 0) {
-    return null;
-  }
-
-  return result.Items[0] as User;
+  return result.Item as User;
 };
 
 export const getUsersByUsername = async (username: string) => {
@@ -63,12 +60,11 @@ export const getUsersByUsername = async (username: string) => {
   return result.Items as ShortFormUser[];
 };
 
-export const subscribeToUser = async (userId: string, username: string, targetUserId: string, targetUsername: string) => {
+export const subscribeToUser = async (userId: string, targetUserId: string) => {
   await docClient.update({
     TableName: USERS_TABLE,
     Key: {
       id: userId,
-      username: username,
     },
     UpdateExpression: 'SET subscribedChannels = list_append(subscribedChannels, :targetUserId)',
     ExpressionAttributeValues: {
@@ -80,7 +76,6 @@ export const subscribeToUser = async (userId: string, username: string, targetUs
     TableName: USERS_TABLE,
     Key: {
       id: targetUserId,
-      username: targetUsername,
     },
     UpdateExpression: 'SET totalSubscribers = totalSubscribers + :increment',
     ExpressionAttributeValues: {
@@ -89,7 +84,7 @@ export const subscribeToUser = async (userId: string, username: string, targetUs
   }).promise();
 };
 
-export const unsubscribeFromUser = async (userId: string, username: string, targetUserId: string, targetUsername: string) => {
+export const unsubscribeFromUser = async (userId: string, targetUserId: string) => {
   const user = await getUserById(userId);
   const subscribedChannels = user.subscribedChannels.filter((id) => id !== targetUserId);
 
@@ -97,7 +92,6 @@ export const unsubscribeFromUser = async (userId: string, username: string, targ
     TableName: USERS_TABLE,
     Key: {
       id: userId,
-      username: username,
     },
     UpdateExpression: 'SET subscribedChannels = :subscribedChannels',
     ExpressionAttributeValues: {
@@ -109,7 +103,6 @@ export const unsubscribeFromUser = async (userId: string, username: string, targ
     TableName: USERS_TABLE,
     Key: {
       id: targetUserId,
-      username: targetUsername,
     },
     UpdateExpression: 'SET totalSubscribers = totalSubscribers - :decrement',
     ExpressionAttributeValues: {
@@ -117,3 +110,25 @@ export const unsubscribeFromUser = async (userId: string, username: string, targ
     },
   }).promise();
 }
+
+export const changeUsername = async (userId: string, newUsername: string) => {
+  await docClient.update({
+    TableName: USERS_TABLE,
+    Key: {
+      id: userId,
+    },
+    UpdateExpression: 'SET username = :newUsername',
+    ExpressionAttributeValues: {
+      ':newUsername': newUsername,
+    },
+  }).promise();
+};
+
+export const generatePresignedUrlForAvatar = async (userId: string) => {
+  return await s3.getSignedUrlPromise('putObject', {
+    Bucket: AVATARS_BUCKET,
+    Key: `${userId}.png`,
+    Expires: parseInt(AVATAR_SIGNED_URL_EXPIRATION),
+    ContentType: 'image/png',
+  });
+};
