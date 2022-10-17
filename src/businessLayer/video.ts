@@ -1,7 +1,13 @@
 import {getProfile} from "./user";
-import {createVideo as addVideo, findVideoById as findVideo, generatePresignedUrlUploadVideo} from '../dataLayer/video';
+import {
+  createVideo as addVideo,
+  findVideoById as findVideo,
+  generatePresignedUrlUploadThumbnail,
+  generatePresignedUrlUploadVideo
+} from '../dataLayer/video';
 import CreateVideoErrors from "../errors/CreateVideoErrors";
 import UploadVideoErrors from "../errors/UploadVideoErrors";
+import UploadThumbnailErrors from "../errors/UploadThumbnailErrors";
 
 export const createVideo = async (userId: string, title: string, description: string) => {
   const user = await getProfile(userId);
@@ -37,3 +43,21 @@ export const uploadVideo = async (videoId: string, userId: string) => {
 
   return await generatePresignedUrlUploadVideo(videoId);
 };
+
+export const uploadThumbnail = async (videoId: string, userId: string) => {
+  const user = await getProfile(userId);
+  if (!user) {
+    throw new Error(UploadThumbnailErrors.USER_NOT_FOUND);
+  }
+
+  const video = await findVideoById(videoId);
+  if (!video) {
+    throw new Error(UploadThumbnailErrors.VIDEO_NOT_FOUND);
+  }
+
+  if (video.userId !== user.id) {
+    throw new Error(UploadThumbnailErrors.INVALID_PERMISSION);
+  }
+
+  return await generatePresignedUrlUploadThumbnail(videoId);
+}

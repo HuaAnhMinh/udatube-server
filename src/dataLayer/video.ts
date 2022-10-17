@@ -12,7 +12,8 @@ const VIDEOS_TABLE = process.env.VIDEOS_TABLE;
 const USERS_TABLE = process.env.USERS_TABLE;
 const VIDEOS_BUCKET = process.env.VIDEOS_BUCKET;
 const VIDEO_SIGNED_URL_EXPIRATION = process.env.VIDEO_SIGNED_URL_EXPIRATION;
-// const THUMBNAILS_BUCKET = process.env.THUMBNAILS_BUCKET;
+const THUMBNAILS_BUCKET = process.env.THUMBNAILS_BUCKET;
+const THUMBNAIL_SIGNED_URL_EXPIRATION = process.env.THUMBNAIL_SIGNED_URL_EXPIRATION;
 
 export const createVideo = async (userId: string, title: string, description: string) => {
   const video: Video = {
@@ -61,5 +62,14 @@ export const generatePresignedUrlUploadVideo = async (videoId: string) => {
     Key: `${videoId}.mp4`,
     Expires: parseInt(VIDEO_SIGNED_URL_EXPIRATION),
     ContentType: 'video/mp4',
+  });
+};
+
+export const generatePresignedUrlUploadThumbnail = async (videoId: string) => {
+  return await s3.getSignedUrlPromise('putObject', {
+    Bucket: THUMBNAILS_BUCKET,
+    Key: `${videoId}.png`,
+    Expires: parseInt(THUMBNAIL_SIGNED_URL_EXPIRATION),
+    ContentType: 'image/png',
   });
 };

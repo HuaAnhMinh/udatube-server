@@ -20,6 +20,8 @@ import CreateVideo from "@functions/CreateVideo";
 import CreateVideoRole from "./src/roles/CreateVideoRole";
 import UploadVideo from "@functions/UploadVideo";
 import UploadVideoRole from "./src/roles/UploadVideoRole";
+import UploadThumbnail from "@functions/UploadThumbnail";
+import UploadThumbnailRole from "./src/roles/UploadThumbnailRole";
 
 const serverlessConfiguration: AWS = {
   service: 'udatube',
@@ -55,6 +57,7 @@ const serverlessConfiguration: AWS = {
       JWKS_URI: 'https://huaanhminh.us.auth0.com/.well-known/jwks.json',
       AVATAR_SIGNED_URL_EXPIRATION: '300',
       VIDEO_SIGNED_URL_EXPIRATION: '3600',
+      THUMBNAIL_SIGNED_URL_EXPIRATION: '300',
     },
   },
   // import the function via paths
@@ -70,6 +73,7 @@ const serverlessConfiguration: AWS = {
     ChangeAvatar,
     CreateVideo,
     UploadVideo,
+    UploadThumbnail,
   },
   package: {individually: true},
   custom: {
@@ -95,6 +99,7 @@ const serverlessConfiguration: AWS = {
       ChangeAvatarRole,
       CreateVideoRole,
       UploadVideoRole,
+      UploadThumbnailRole,
       UsersDynamoDBTable: {
         Type: 'AWS::DynamoDB::Table',
         Properties: {
@@ -184,6 +189,36 @@ const serverlessConfiguration: AWS = {
             }],
           },
           Bucket: '${self:provider.environment.VIDEOS_BUCKET}',
+        },
+      },
+      ThumbnailsS3Bucket: {
+        Type: 'AWS::S3::Bucket',
+        Properties: {
+          BucketName: '${self:provider.environment.THUMBNAILS_BUCKET}',
+          CorsConfiguration: {
+            CorsRules: [{
+              AllowedHeaders: ['*'],
+              AllowedMethods: ['GET', 'PUT', 'POST', 'DELETE'],
+              AllowedOrigins: ['*'],
+              MaxAge: 3000,
+            }],
+          },
+        },
+      },
+      ThumbnailsS3BucketPolicy: {
+        Type: 'AWS::S3::BucketPolicy',
+        Properties: {
+          PolicyDocument: {
+            Id: '${self:provider.environment.THUMBNAILS_BUCKET}-policy',
+            Version: '2012-10-17',
+            Statement: [{
+              Effect: 'Allow',
+              Principal: '*',
+              Action: 's3:GetObject',
+              Resource: 'arn:aws:s3:::${self:provider.environment.THUMBNAILS_BUCKET}/*',
+            }],
+          },
+          Bucket: '${self:provider.environment.THUMBNAILS_BUCKET}',
         },
       },
     },
