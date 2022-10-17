@@ -16,6 +16,8 @@ import ChangeUsername from '@functions/ChangeUsername';
 import ChangeUsernameRole from "./src/roles/ChangeUsernameRole";
 import ChangeAvatarRole from "./src/roles/ChangeAvatarRole";
 import ChangeAvatar from "@functions/ChangeAvatar";
+import CreateVideo from "@functions/CreateVideo";
+import CreateVideoRole from "./src/roles/CreateVideoRole";
 
 const serverlessConfiguration: AWS = {
   service: 'udatube',
@@ -63,6 +65,7 @@ const serverlessConfiguration: AWS = {
     UnsubscribeChannel,
     ChangeUsername,
     ChangeAvatar,
+    CreateVideo
   },
   package: {individually: true},
   custom: {
@@ -86,6 +89,7 @@ const serverlessConfiguration: AWS = {
       UnsubscribeChannelRole,
       ChangeUsernameRole,
       ChangeAvatarRole,
+      CreateVideoRole,
       UsersDynamoDBTable: {
         Type: 'AWS::DynamoDB::Table',
         Properties: {

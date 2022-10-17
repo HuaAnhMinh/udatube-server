@@ -81,11 +81,15 @@ export const editUsername = async (userId: string, newUsername: string) => {
     throw new Error(ChangeUsernameErrors.USER_NOT_FOUND);
   }
 
+  if (!newUsername.trim()) {
+    throw new Error(ChangeUsernameErrors.INVALID_USERNAME);
+  }
+
   if (user.username === newUsername) {
     return;
   }
 
-  await changeUsername(userId, newUsername);
+  await changeUsername(userId, newUsername.trim());
 };
 
 export const changeAvatar = async (userId: string) => {

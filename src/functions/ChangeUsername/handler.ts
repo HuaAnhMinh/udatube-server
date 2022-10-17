@@ -23,7 +23,16 @@ const ChangeUsername: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async 
       return {
         statusCode: 404,
         body: JSON.stringify({
-          message: 'User not found',
+          message: e.message,
+        }),
+      };
+    }
+
+    if (e.message === ChangeUsernameErrors.INVALID_USERNAME) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({
+          message: e.message,
         }),
       };
     }
