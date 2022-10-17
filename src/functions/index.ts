@@ -8,3 +8,4 @@ export { default as UnsubscribeChannel } from './UnsubscribeChannel';
 export { default as ChangeUsername } from './ChangeUsername';
 export { default as ChangeAvatar } from './ChangeAvatar';
 export { default as CreateVideo } from './CreateVideo';
+export { default as UploadVideo } from './UploadVideo';

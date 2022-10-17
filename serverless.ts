@@ -18,6 +18,8 @@ import ChangeAvatarRole from "./src/roles/ChangeAvatarRole";
 import ChangeAvatar from "@functions/ChangeAvatar";
 import CreateVideo from "@functions/CreateVideo";
 import CreateVideoRole from "./src/roles/CreateVideoRole";
+import UploadVideo from "@functions/UploadVideo";
+import UploadVideoRole from "./src/roles/UploadVideoRole";
 
 const serverlessConfiguration: AWS = {
   service: 'udatube',
@@ -52,6 +54,7 @@ const serverlessConfiguration: AWS = {
       THUMBNAILS_BUCKET: 'udatube-thumbnails-${self:provider.stage}',
       JWKS_URI: 'https://huaanhminh.us.auth0.com/.well-known/jwks.json',
       AVATAR_SIGNED_URL_EXPIRATION: '300',
+      VIDEO_SIGNED_URL_EXPIRATION: '3600',
     },
   },
   // import the function via paths
@@ -65,7 +68,8 @@ const serverlessConfiguration: AWS = {
     UnsubscribeChannel,
     ChangeUsername,
     ChangeAvatar,
-    CreateVideo
+    CreateVideo,
+    UploadVideo,
   },
   package: {individually: true},
   custom: {
@@ -90,6 +94,7 @@ const serverlessConfiguration: AWS = {
       ChangeUsernameRole,
       ChangeAvatarRole,
       CreateVideoRole,
+      UploadVideoRole,
       UsersDynamoDBTable: {
         Type: 'AWS::DynamoDB::Table',
         Properties: {
@@ -113,16 +118,10 @@ const serverlessConfiguration: AWS = {
           AttributeDefinitions: [{
             AttributeName: 'id',
             AttributeType: 'S',
-          }, {
-            AttributeName: 'userId',
-            AttributeType: 'S',
           }],
           KeySchema: [{
             AttributeName: 'id',
             KeyType: 'HASH',
-          }, {
-            AttributeName: 'userId',
-            KeyType: 'RANGE',
           }],
         },
       },
@@ -155,6 +154,36 @@ const serverlessConfiguration: AWS = {
             }],
           },
           Bucket: '${self:provider.environment.AVATARS_BUCKET}',
+        },
+      },
+      VideosS3Bucket: {
+        Type: 'AWS::S3::Bucket',
+        Properties: {
+          BucketName: '${self:provider.environment.VIDEOS_BUCKET}',
+          CorsConfiguration: {
+            CorsRules: [{
+              AllowedHeaders: ['*'],
+              AllowedMethods: ['GET', 'PUT', 'POST', 'DELETE'],
+              AllowedOrigins: ['*'],
+              MaxAge: 3000,
+            }],
+          },
+        },
+      },
+      VideosS3BucketPolicy: {
+        Type: 'AWS::S3::BucketPolicy',
+        Properties: {
+          PolicyDocument: {
+            Id: '${self:provider.environment.VIDEOS_BUCKET}-policy',
+            Version: '2012-10-17',
+            Statement: [{
+              Effect: 'Allow',
+              Principal: '*',
+              Action: 's3:GetObject',
+              Resource: 'arn:aws:s3:::${self:provider.environment.VIDEOS_BUCKET}/*',
+            }],
+          },
+          Bucket: '${self:provider.environment.VIDEOS_BUCKET}',
         },
       },
     },

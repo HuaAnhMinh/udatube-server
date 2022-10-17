@@ -4,13 +4,14 @@ import { v4 } from 'uuid';
 import {Video} from "../models/video";
 
 const docClient = new AWS.DynamoDB.DocumentClient();
-// const s3 = new AWS.S3({
-//   signatureVersion: 'v4'
-// });
+const s3 = new AWS.S3({
+  signatureVersion: 'v4'
+});
 
 const VIDEOS_TABLE = process.env.VIDEOS_TABLE;
 const USERS_TABLE = process.env.USERS_TABLE;
-// const VIDEOS_BUCKET = process.env.VIDEOS_BUCKET;
+const VIDEOS_BUCKET = process.env.VIDEOS_BUCKET;
+const VIDEO_SIGNED_URL_EXPIRATION = process.env.VIDEO_SIGNED_URL_EXPIRATION;
 // const THUMBNAILS_BUCKET = process.env.THUMBNAILS_BUCKET;
 
 export const createVideo = async (userId: string, title: string, description: string) => {
@@ -41,4 +42,24 @@ export const createVideo = async (userId: string, title: string, description: st
   }).promise();
 
   return video;
+};
+
+export const findVideoById = async (videoId: string): Promise<Video> => {
+  const result = await docClient.get({
+    TableName: VIDEOS_TABLE,
+    Key: {
+      id: videoId,
+    },
+  }).promise();
+
+  return result.Item as Video;
+};
+
+export const generatePresignedUrlUploadVideo = async (videoId: string) => {
+  return await s3.getSignedUrlPromise('putObject', {
+    Bucket: VIDEOS_BUCKET,
+    Key: `${videoId}.mp4`,
+    Expires: parseInt(VIDEO_SIGNED_URL_EXPIRATION),
+    ContentType: 'video/mp4',
+  });
 };
