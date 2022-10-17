@@ -8,9 +8,6 @@ export default {
     http: {
       method: 'get',
       path: 'users',
-      authorizer: {
-        name: 'Authorizer',
-      },
       cors: true,
     },
   }],

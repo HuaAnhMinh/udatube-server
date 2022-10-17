@@ -10,3 +10,4 @@ export { default as ChangeAvatar } from './ChangeAvatar';
 export { default as CreateVideo } from './CreateVideo';
 export { default as UploadVideo } from './UploadVideo';
 export { default as UploadThumbnail } from './UploadThumbnail';
+export { default as GetVideos } from './GetVideos';

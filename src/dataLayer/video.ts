@@ -73,3 +73,20 @@ export const generatePresignedUrlUploadThumbnail = async (videoId: string) => {
     ContentType: 'image/png',
   });
 };
+
+export const getVideos = async (title: string, limit: number, nextKey: any) => {
+  const result = await docClient.scan({
+    TableName: VIDEOS_TABLE,
+    Limit: limit,
+    ExclusiveStartKey: nextKey,
+    FilterExpression: 'contains(title, :title)',
+    ExpressionAttributeValues: {
+      ':title': title,
+    },
+  }).promise();
+
+  return {
+    videos: result.Items,
+    nextKey: result.LastEvaluatedKey ? encodeURIComponent(JSON.stringify(result.LastEvaluatedKey)) : null,
+  };
+};
