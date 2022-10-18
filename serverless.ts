@@ -24,6 +24,10 @@ import UploadThumbnail from "@functions/UploadThumbnail";
 import UploadThumbnailRole from "./src/roles/UploadThumbnailRole";
 import GetVideos from "@functions/GetVideos";
 import GetVideosRole from "./src/roles/GetVideosRole";
+import GetVideo from "@functions/GetVideo";
+import GetVideoRole from "./src/roles/GetVideoRole";
+import DeleteVideo from "@functions/DeleteVideo";
+import DeleteVideoRole from "./src/roles/DeleteVideoRole";
 
 const serverlessConfiguration: AWS = {
   service: 'udatube',
@@ -77,6 +81,8 @@ const serverlessConfiguration: AWS = {
     UploadVideo,
     UploadThumbnail,
     GetVideos,
+    GetVideo,
+    DeleteVideo,
   },
   package: {individually: true},
   custom: {
@@ -104,6 +110,8 @@ const serverlessConfiguration: AWS = {
       UploadVideoRole,
       UploadThumbnailRole,
       GetVideosRole,
+      GetVideoRole,
+      DeleteVideoRole,
       UsersDynamoDBTable: {
         Type: 'AWS::DynamoDB::Table',
         Properties: {

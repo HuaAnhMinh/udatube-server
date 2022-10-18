@@ -1,7 +1,8 @@
 import { createHash } from 'crypto';
 import * as AWS from 'aws-sdk';
 import { v4 } from 'uuid';
-import {Video} from "../models/video";
+import {ShortFormVideo, Video} from "../models/video";
+import {getUserById} from "./user";
 
 const docClient = new AWS.DynamoDB.DocumentClient();
 const s3 = new AWS.S3({
@@ -83,10 +84,62 @@ export const getVideos = async (title: string, limit: number, nextKey: any) => {
     ExpressionAttributeValues: {
       ':title': title,
     },
+    ProjectionExpression: 'id, userId, title, totalViews, likes, dislikes',
   }).promise();
 
+  const videos = result.Items.map((video: Video) => {
+    return {
+      id: video.id,
+      userId: video.userId,
+      title: video.title,
+      totalViews: video.totalViews,
+      likes: video.likes.length,
+      dislikes: video.dislikes.length,
+    } as ShortFormVideo;
+  });
+
   return {
-    videos: result.Items,
+    videos,
     nextKey: result.LastEvaluatedKey ? encodeURIComponent(JSON.stringify(result.LastEvaluatedKey)) : null,
   };
+};
+
+export const deleteVideo = async (videoId: string) => {
+  const video = await findVideoById(videoId);
+  const user = await getUserById(video.userId);
+
+  await docClient.delete({
+    TableName: VIDEOS_TABLE,
+    Key: {
+      id: videoId,
+    },
+  }).promise();
+
+  const videoIndex = user.videos.indexOf(videoId);
+
+  await docClient.update({
+    TableName: USERS_TABLE,
+    Key: {id: video.userId},
+    UpdateExpression: `REMOVE videos[${videoIndex}]`,
+  }).promise();
+
+  try {
+    await s3.deleteObject({
+      Bucket: VIDEOS_BUCKET,
+      Key: `${videoId}.mp4`,
+    }).promise();
+  }
+  catch (e) {
+    console.log(e);
+  }
+
+  try {
+    await s3.deleteObject({
+      Bucket: THUMBNAILS_BUCKET,
+      Key: `${videoId}.png`,
+    }).promise();
+  }
+  catch (e) {
+    console.log(e);
+  }
 };

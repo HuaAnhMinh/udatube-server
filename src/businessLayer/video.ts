@@ -5,11 +5,13 @@ import {
   generatePresignedUrlUploadThumbnail,
   generatePresignedUrlUploadVideo,
   getVideos as fetchVideos,
+  deleteVideo as removeVideo,
 } from '../dataLayer/video';
 import CreateVideoErrors from "../errors/CreateVideoErrors";
 import UploadVideoErrors from "../errors/UploadVideoErrors";
 import UploadThumbnailErrors from "../errors/UploadThumbnailErrors";
 import GetVideosError from "../errors/GetVideosError";
+import DeleteVideoErrors from "../errors/DeleteVideoErrors";
 
 export const createVideo = async (userId: string, title: string, description: string) => {
   const user = await getProfile(userId);
@@ -96,5 +98,27 @@ export const getVideos = async (query: { title?: string, limit?: string, nextKey
     }
   }
 
-  return await fetchVideos(title, limit, nextKey);
+  const result = await fetchVideos(title, limit, nextKey);
+  for (const video of result.videos) {
+    video.username = (await getProfile(video.userId)).username;
+  }
+  return result;
+};
+
+export const deleteVideo = async (videoId: string, userId: string) => {
+  const user = await getProfile(userId);
+  if (!user) {
+    throw new Error(DeleteVideoErrors.FOUND_NO_USER);
+  }
+
+  const video = await findVideoById(videoId);
+  if (!video) {
+    throw new Error(DeleteVideoErrors.FOUND_NO_VIDEO);
+  }
+
+  if (video.userId !== user.id) {
+    throw new Error(DeleteVideoErrors.INVALID_PERMISSION);
+  }
+
+  return await removeVideo(videoId);
 };

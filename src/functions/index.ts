@@ -11,3 +11,5 @@ export { default as CreateVideo } from './CreateVideo';
 export { default as UploadVideo } from './UploadVideo';
 export { default as UploadThumbnail } from './UploadThumbnail';
 export { default as GetVideos } from './GetVideos';
+export { default as GetVideo } from './GetVideo';
+export { default as DeleteVideo } from './DeleteVideo';
