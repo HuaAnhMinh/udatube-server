@@ -6,12 +6,14 @@ import {
   generatePresignedUrlUploadVideo,
   getVideos as fetchVideos,
   deleteVideo as removeVideo,
+  updateVideo as _updateVideo,
 } from '../dataLayer/video';
 import CreateVideoErrors from "../errors/CreateVideoErrors";
 import UploadVideoErrors from "../errors/UploadVideoErrors";
 import UploadThumbnailErrors from "../errors/UploadThumbnailErrors";
 import GetVideosError from "../errors/GetVideosError";
 import DeleteVideoErrors from "../errors/DeleteVideoErrors";
+import SyncVideoUpdatedTimeErrors from "../errors/SyncVideoUpdatedTimeErrors";
 
 export const createVideo = async (userId: string, title: string, description: string) => {
   const user = await getProfile(userId);
@@ -121,4 +123,32 @@ export const deleteVideo = async (videoId: string, userId: string) => {
   }
 
   return await removeVideo(videoId);
+};
+
+export const updateVideo = async (videoId: string, userId: string, title: string, description: string) => {
+  const user = await getProfile(userId);
+  if (!user) {
+    throw new Error();
+  }
+
+  const video = await findVideoById(videoId);
+  if (!video) {
+    throw new Error();
+  }
+
+  if (video.userId !== user.id) {
+    throw new Error();
+  }
+
+  return await _updateVideo(videoId, {title, description});
+};
+
+export const updateVideoContent = async (key: string) => {
+  const id = key.split('.')[0];
+  const video = await findVideoById(id);
+  if (!video) {
+    throw new Error(SyncVideoUpdatedTimeErrors.FOUND_NO_VIDEO);
+  }
+
+  return await _updateVideo(id, { content: true });
 };

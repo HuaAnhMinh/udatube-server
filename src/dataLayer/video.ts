@@ -11,6 +11,7 @@ const s3 = new AWS.S3({
 
 const VIDEOS_TABLE = process.env.VIDEOS_TABLE;
 const USERS_TABLE = process.env.USERS_TABLE;
+// const COMMENTS_TABLE = process.env.COMMENTS_TABLE;
 const VIDEOS_BUCKET = process.env.VIDEOS_BUCKET;
 const VIDEO_SIGNED_URL_EXPIRATION = process.env.VIDEO_SIGNED_URL_EXPIRATION;
 const THUMBNAILS_BUCKET = process.env.THUMBNAILS_BUCKET;
@@ -141,5 +142,44 @@ export const deleteVideo = async (videoId: string) => {
   }
   catch (e) {
     console.log(e);
+  }
+};
+
+export const updateVideo = async (videoId: string, updated: {
+  title?: string;
+  description?: string;
+  content?: boolean;
+}) => {
+  let updateExpression = '';
+  const expressionAttributeValues = {};
+  if (updated.title) {
+    updateExpression += 'set title = :title, ';
+    expressionAttributeValues[':title'] = updated.title;
+  }
+  if (updated.description) {
+    updateExpression += 'set description = :description, ';
+    expressionAttributeValues[':description'] = updated.description;
+  }
+  if (updateExpression) {
+    updateExpression += 'set updatedAt = :updatedAt';
+    expressionAttributeValues[':updatedAt'] = new Date().toISOString();
+
+    await docClient.update({
+      TableName: VIDEOS_TABLE,
+      Key: {id: videoId},
+      UpdateExpression: updateExpression,
+      ExpressionAttributeValues: expressionAttributeValues,
+    }).promise();
+  }
+
+  if (updated.content) {
+    await docClient.update({
+      TableName: VIDEOS_TABLE,
+      Key: {id: videoId},
+      UpdateExpression: 'set updatedAt = :updatedAt',
+      ExpressionAttributeValues: {
+        ':updatedAt': new Date().toISOString(),
+      },
+    }).promise();
   }
 };

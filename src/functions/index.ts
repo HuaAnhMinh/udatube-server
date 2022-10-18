@@ -13,3 +13,4 @@ export { default as UploadThumbnail } from './UploadThumbnail';
 export { default as GetVideos } from './GetVideos';
 export { default as GetVideo } from './GetVideo';
 export { default as DeleteVideo } from './DeleteVideo';
+export { default as SyncVideoUpdatedTime } from './SyncVideoUpdatedTime';

@@ -28,6 +28,8 @@ import GetVideo from "@functions/GetVideo";
 import GetVideoRole from "./src/roles/GetVideoRole";
 import DeleteVideo from "@functions/DeleteVideo";
 import DeleteVideoRole from "./src/roles/DeleteVideoRole";
+import SyncVideoUpdatedTime from "@functions/SyncVideoUpdatedTime";
+import SyncVideoUpdatedTimeRole from "./src/roles/SyncVideoUpdatedTimeRole";
 
 const serverlessConfiguration: AWS = {
   service: 'udatube',
@@ -57,9 +59,11 @@ const serverlessConfiguration: AWS = {
       NODE_OPTIONS: '--enable-source-maps --stack-trace-limit=1000',
       USERS_TABLE: 'UdaTubeUsers-${self:provider.stage}',
       VIDEOS_TABLE: 'UdaTubeVideos-${self:provider.stage}',
+      COMMENTS_TABLE: 'UdaTubeComments-${self:provider.stage}',
       AVATARS_BUCKET: 'udatube-avatars-${self:provider.stage}',
       VIDEOS_BUCKET: 'udatube-videos-${self:provider.stage}',
       THUMBNAILS_BUCKET: 'udatube-thumbnails-${self:provider.stage}',
+      VIDEOS_TOPIC: 'UdaTubeVideosTopic-${self:provider.stage}',
       JWKS_URI: 'https://huaanhminh.us.auth0.com/.well-known/jwks.json',
       AVATAR_SIGNED_URL_EXPIRATION: '300',
       VIDEO_SIGNED_URL_EXPIRATION: '3600',
@@ -83,6 +87,7 @@ const serverlessConfiguration: AWS = {
     GetVideos,
     GetVideo,
     DeleteVideo,
+    SyncVideoUpdatedTime,
   },
   package: {individually: true},
   custom: {
@@ -112,6 +117,7 @@ const serverlessConfiguration: AWS = {
       GetVideosRole,
       GetVideoRole,
       DeleteVideoRole,
+      SyncVideoUpdatedTimeRole,
       UsersDynamoDBTable: {
         Type: 'AWS::DynamoDB::Table',
         Properties: {
@@ -131,6 +137,21 @@ const serverlessConfiguration: AWS = {
         Type: 'AWS::DynamoDB::Table',
         Properties: {
           TableName: '${self:provider.environment.VIDEOS_TABLE}',
+          BillingMode: 'PAY_PER_REQUEST',
+          AttributeDefinitions: [{
+            AttributeName: 'id',
+            AttributeType: 'S',
+          }],
+          KeySchema: [{
+            AttributeName: 'id',
+            KeyType: 'HASH',
+          }],
+        },
+      },
+      CommentsDynamoDBTable: {
+        Type: 'AWS::DynamoDB::Table',
+        Properties: {
+          TableName: '${self:provider.environment.COMMENTS_TABLE}',
           BillingMode: 'PAY_PER_REQUEST',
           AttributeDefinitions: [{
             AttributeName: 'id',
@@ -177,6 +198,14 @@ const serverlessConfiguration: AWS = {
         Type: 'AWS::S3::Bucket',
         Properties: {
           BucketName: '${self:provider.environment.VIDEOS_BUCKET}',
+          NotificationConfiguration: {
+            TopicConfigurations: [{
+              Event: 's3:ObjectCreated:*',
+              Topic: {
+                Ref: 'VideosTopic',
+              }
+            }],
+          },
           CorsConfiguration: {
             CorsRules: [{
               AllowedHeaders: ['*'],
@@ -196,7 +225,7 @@ const serverlessConfiguration: AWS = {
             Statement: [{
               Effect: 'Allow',
               Principal: '*',
-              Action: 's3:GetObject',
+              Action: 's3:*',
               Resource: 'arn:aws:s3:::${self:provider.environment.VIDEOS_BUCKET}/*',
             }],
           },
@@ -207,6 +236,14 @@ const serverlessConfiguration: AWS = {
         Type: 'AWS::S3::Bucket',
         Properties: {
           BucketName: '${self:provider.environment.THUMBNAILS_BUCKET}',
+          NotificationConfiguration: {
+            TopicConfigurations: [{
+              Event: 's3:ObjectCreated:*',
+              Topic: {
+                Ref: 'VideosTopic',
+              }
+            }],
+          },
           CorsConfiguration: {
             CorsRules: [{
               AllowedHeaders: ['*'],
@@ -226,11 +263,47 @@ const serverlessConfiguration: AWS = {
             Statement: [{
               Effect: 'Allow',
               Principal: '*',
-              Action: 's3:GetObject',
+              Action: 's3:*',
               Resource: 'arn:aws:s3:::${self:provider.environment.THUMBNAILS_BUCKET}/*',
             }],
           },
           Bucket: '${self:provider.environment.THUMBNAILS_BUCKET}',
+        },
+      },
+      VideosTopic: {
+        Type: 'AWS::SNS::Topic',
+        Properties: {
+          DisplayName: 'UdaTube videos bucket topic',
+          TopicName: '${self:provider.environment.VIDEOS_TOPIC}',
+        },
+      },
+      SNSTopicPolicy: {
+        Type: 'AWS::SNS::TopicPolicy',
+        Properties: {
+          PolicyDocument: {
+            Version: '2012-10-17',
+            Statement: [{
+              Effect: 'Allow',
+              Principal: {
+                AWS: '*',
+              },
+              Action: 'sns:Publish',
+              Resource: {
+                Ref: 'VideosTopic',
+              },
+              Condition: {
+                ArnLike: {
+                  'AWS:SourceArn': [
+                    'arn:aws:s3:::${self:provider.environment.VIDEOS_BUCKET}',
+                    'arn:aws:s3:::${self:provider.environment.THUMBNAILS_BUCKET}',
+                  ],
+                },
+              },
+            }],
+          },
+          Topics: [{
+            Ref: 'VideosTopic',
+          }],
         },
       },
     },
