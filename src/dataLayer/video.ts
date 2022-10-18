@@ -153,16 +153,19 @@ export const updateVideo = async (videoId: string, updated: {
   let updateExpression = '';
   const expressionAttributeValues = {};
   if (updated.title) {
-    updateExpression += 'set title = :title, ';
+    updateExpression += 'title = :title, ';
     expressionAttributeValues[':title'] = updated.title;
   }
   if (updated.description) {
-    updateExpression += 'set description = :description, ';
+    updateExpression += 'description = :description, ';
     expressionAttributeValues[':description'] = updated.description;
   }
   if (updateExpression) {
-    updateExpression += 'set updatedAt = :updatedAt';
+    updateExpression += 'updatedAt = :updatedAt';
+    updateExpression = 'set ' + updateExpression;
     expressionAttributeValues[':updatedAt'] = new Date().toISOString();
+    console.log(updateExpression);
+    console.log(expressionAttributeValues);
 
     await docClient.update({
       TableName: VIDEOS_TABLE,
@@ -182,4 +185,57 @@ export const updateVideo = async (videoId: string, updated: {
       },
     }).promise();
   }
+};
+
+export const increaseVideoViews = async (videoId: string) => {
+  await docClient.update({
+    TableName: VIDEOS_TABLE,
+    Key: {id: videoId},
+    UpdateExpression: 'set totalViews = totalViews + :totalViews',
+    ExpressionAttributeValues: {
+      ':totalViews': 1,
+    },
+  }).promise();
+};
+
+export const reactVideo = async (videoId: string, userId: string, likeOrDislike: 'likes' | 'dislikes') => {
+  const video = await findVideoById(videoId);
+  const oppositeReaction = likeOrDislike === 'likes' ? 'dislikes' : 'likes';
+
+  if (video[likeOrDislike].includes(userId)) {
+    return;
+  }
+
+  const index = video[oppositeReaction].indexOf(userId);
+  if (index > -1) {
+    await docClient.update({
+      TableName: VIDEOS_TABLE,
+      Key: {id: videoId},
+      UpdateExpression: 'REMOVE ' + oppositeReaction + '[' + index + ']',
+    }).promise();
+  }
+
+  await docClient.update({
+    TableName: VIDEOS_TABLE,
+    Key: {id: videoId},
+    UpdateExpression: 'set ' + likeOrDislike + ' = list_append(' + likeOrDislike + ', :userId)',
+    ExpressionAttributeValues: {
+      ':userId': [userId],
+    },
+  }).promise();
+};
+
+export const unreactVideo = async (videoId: string, userId: string, likeOrDislike: 'likes' | 'dislikes') => {
+  const video = await findVideoById(videoId);
+
+  if (!video[likeOrDislike].includes(userId)) {
+    return;
+  }
+
+  const index = video[likeOrDislike].indexOf(userId);
+  await docClient.update({
+    TableName: VIDEOS_TABLE,
+    Key: {id: videoId},
+    UpdateExpression: 'REMOVE ' + likeOrDislike + '[' + index + ']',
+  }).promise();
 };

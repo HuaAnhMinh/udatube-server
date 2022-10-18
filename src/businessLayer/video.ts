@@ -6,7 +6,9 @@ import {
   generatePresignedUrlUploadVideo,
   getVideos as fetchVideos,
   deleteVideo as removeVideo,
-  updateVideo as _updateVideo,
+  updateVideo as _updateVideo, increaseVideoViews,
+  reactVideo as _reactVideo,
+  unreactVideo as _unreactVideo,
 } from '../dataLayer/video';
 import CreateVideoErrors from "../errors/CreateVideoErrors";
 import UploadVideoErrors from "../errors/UploadVideoErrors";
@@ -14,6 +16,8 @@ import UploadThumbnailErrors from "../errors/UploadThumbnailErrors";
 import GetVideosError from "../errors/GetVideosError";
 import DeleteVideoErrors from "../errors/DeleteVideoErrors";
 import SyncVideoUpdatedTimeErrors from "../errors/SyncVideoUpdatedTimeErrors";
+import UpdateVideoErrors from "../errors/UpdateVideoErrors";
+import ReactVideoErrors from "../errors/ReactVideoErrors";
 
 export const createVideo = async (userId: string, title: string, description: string) => {
   const user = await getProfile(userId);
@@ -29,6 +33,12 @@ export const createVideo = async (userId: string, title: string, description: st
 };
 
 export const findVideoById = async (videoId: string) => {
+  try {
+    await increaseVideoViews(videoId);
+  }
+  catch (e) {
+    console.log(e);
+  }
   return await findVideo(videoId);
 };
 
@@ -128,19 +138,28 @@ export const deleteVideo = async (videoId: string, userId: string) => {
 export const updateVideo = async (videoId: string, userId: string, title: string, description: string) => {
   const user = await getProfile(userId);
   if (!user) {
-    throw new Error();
+    throw new Error(UpdateVideoErrors.FOUND_NO_USER);
   }
 
   const video = await findVideoById(videoId);
   if (!video) {
-    throw new Error();
+    throw new Error(UpdateVideoErrors.FOUND_NO_VIDEO);
   }
 
   if (video.userId !== user.id) {
-    throw new Error();
+    throw new Error(UpdateVideoErrors.INVALID_PERMISSION);
   }
 
-  return await _updateVideo(videoId, {title, description});
+  const updated = {};
+  if (title.trim() && title !== video.title) {
+    updated['title'] = title.trim();
+  }
+
+  if (description.trim() && description !== video.description) {
+    updated['description'] = description.trim();
+  }
+
+  return await _updateVideo(videoId, updated);
 };
 
 export const updateVideoContent = async (key: string) => {
@@ -152,3 +171,31 @@ export const updateVideoContent = async (key: string) => {
 
   return await _updateVideo(id, { content: true });
 };
+
+export const reactVideo = async (videoId: string, userId: string, reaction: 'likes' | 'dislikes') => {
+  const user = await getProfile(userId);
+  if (!user) {
+    throw new Error(ReactVideoErrors.FOUND_NO_USER);
+  }
+
+  const video = await findVideoById(videoId);
+  if (!video) {
+    throw new Error(ReactVideoErrors.FOUND_NO_VIDEO);
+  }
+
+  return await _reactVideo(videoId, userId, reaction);
+};
+
+export const unreactVideo = async (videoId: string, userId: string, reaction: 'likes' | 'dislikes') => {
+  const user = await getProfile(userId);
+  if (!user) {
+    throw new Error(ReactVideoErrors.FOUND_NO_USER);
+  }
+
+  const video = await findVideoById(videoId);
+  if (!video) {
+    throw new Error(ReactVideoErrors.FOUND_NO_VIDEO);
+  }
+
+  return await _unreactVideo(videoId, userId, reaction);
+}

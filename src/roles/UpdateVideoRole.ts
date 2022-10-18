@@ -3,7 +3,7 @@ import LogRole from "./LogRole";
 export default {
   Type: 'AWS::IAM::Role',
   Properties: {
-    RoleName: 'GetVideoRole',
+    RoleName: 'UpdateVideoRole',
     AssumeRolePolicyDocument: {
       Version: '2012-10-17',
       Statement: [{
@@ -15,14 +15,22 @@ export default {
       }],
     },
     Policies: [{
-      PolicyName: 'GetVideoRolePolicy',
+      PolicyName: 'UpdateVideoRolePolicy',
       PolicyDocument: {
         Version: '2012-10-17',
         Statement: [...LogRole, {
           Effect: 'Allow',
           Action: [
             'dynamodb:GetItem',
+          ],
+          Resource: [
+            'arn:aws:dynamodb:us-east-1:*:table/${self:provider.environment.USERS_TABLE}',
+          ],
+        }, {
+          Effect: 'Allow',
+          Action: [
             'dynamodb:UpdateItem',
+            'dynamodb:GetItem',
           ],
           Resource: [
             'arn:aws:dynamodb:us-east-1:*:table/${self:provider.environment.VIDEOS_TABLE}',

@@ -30,6 +30,13 @@ import DeleteVideo from "@functions/DeleteVideo";
 import DeleteVideoRole from "./src/roles/DeleteVideoRole";
 import SyncVideoUpdatedTime from "@functions/SyncVideoUpdatedTime";
 import SyncVideoUpdatedTimeRole from "./src/roles/SyncVideoUpdatedTimeRole";
+import UpdateVideo from "@functions/UpdateVideo";
+import UpdateVideoRole from "./src/roles/UpdateVideoRole";
+import LikeVideo from "@functions/LikeVideo";
+import ReactVideoRole from "./src/roles/ReactVideoRole";
+import UnlikeVideo from "@functions/UnlikeVideo";
+import DislikeVideo from "@functions/DislikeVideo";
+import UndislikeVideo from "@functions/UndislikeVideo";
 
 const serverlessConfiguration: AWS = {
   service: 'udatube',
@@ -88,6 +95,11 @@ const serverlessConfiguration: AWS = {
     GetVideo,
     DeleteVideo,
     SyncVideoUpdatedTime,
+    UpdateVideo,
+    LikeVideo,
+    UnlikeVideo,
+    DislikeVideo,
+    UndislikeVideo,
   },
   package: {individually: true},
   custom: {
@@ -118,6 +130,8 @@ const serverlessConfiguration: AWS = {
       GetVideoRole,
       DeleteVideoRole,
       SyncVideoUpdatedTimeRole,
+      UpdateVideoRole,
+      ReactVideoRole,
       UsersDynamoDBTable: {
         Type: 'AWS::DynamoDB::Table',
         Properties: {

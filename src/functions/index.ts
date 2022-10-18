@@ -14,3 +14,8 @@ export { default as GetVideos } from './GetVideos';
 export { default as GetVideo } from './GetVideo';
 export { default as DeleteVideo } from './DeleteVideo';
 export { default as SyncVideoUpdatedTime } from './SyncVideoUpdatedTime';
+export { default as UpdateVideo } from './UpdateVideo';
+export { default as LikeVideo } from './LikeVideo';
+export { default as UnlikeVideo } from './UnlikeVideo';
+export { default as DislikeVideo } from './DislikeVideo';
+export { default as UndislikeVideo } from './UndislikeVideo';
