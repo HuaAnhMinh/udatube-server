@@ -47,7 +47,7 @@ export const getUserById = async (id: string) => {
   return result.Item as User;
 };
 
-export const getUsersByUsername = async (username: string) => {
+export const getUsersByUsername = async (username: string, limit: number, nextKey: any) => {
   const result = await docClient.scan({
     TableName: USERS_TABLE,
     FilterExpression: 'contains(username, :username)',
@@ -55,9 +55,14 @@ export const getUsersByUsername = async (username: string) => {
       ':username': username,
     },
     ProjectionExpression: 'id, username',
+    ExclusiveStartKey: nextKey,
+    Limit: limit,
   }).promise();
 
-  return result.Items as ShortFormUser[];
+  return {
+    users: result.Items as ShortFormUser[],
+    nextKey: result.LastEvaluatedKey ? encodeURIComponent(JSON.stringify(result.LastEvaluatedKey)) : null,
+  };
 };
 
 export const subscribeToUser = async (userId: string, targetUserId: string) => {

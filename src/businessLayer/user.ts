@@ -10,6 +10,7 @@ import RegisterErrors from "../errors/RegisterErrors";
 import SubscribeChannelErrors from "../errors/SubscribeChannelErrors";
 import UnsubscribeChannelErrors from "../errors/UnsubscribeChannelErrors";
 import ChangeUsernameErrors from "../errors/ChangeUsernameErrors";
+import SearchUsersErrors from "../errors/SearchUsersErrors";
 
 export const getProfile = async (id: string) => {
   return await getUserById(id);
@@ -23,8 +24,39 @@ export const createUser = async (id: string) => {
   return await addUserToDB(id);
 };
 
-export const searchUsers = async (username: string) => {
-  return await getUsersByUsername(username);
+export const searchUsers = async (query: { username?: string, limit?: string, nextKey?: string }) => {
+  const username = query.username || '';
+  let limit = query.limit || 10;
+  if (typeof limit === 'string') {
+    limit = parseInt(limit);
+    if (isNaN(limit)) {
+      throw new Error(SearchUsersErrors.LIMIT_MUST_BE_NUMBER);
+    }
+
+    if (limit <= 0) {
+      throw new Error(SearchUsersErrors.LIMIT_MUST_BE_GREATER_THAN_0);
+    }
+  }
+
+  let nextKey = query.nextKey;
+  if (nextKey) {
+    const uriDecoded = decodeURIComponent(nextKey);
+    console.log('uriDecoded', uriDecoded);
+    try {
+      nextKey = JSON.parse(uriDecoded);
+      console.log('nextKey', nextKey);
+    }
+    catch (e) {
+      console.log(e);
+      throw new Error(SearchUsersErrors.NEXT_KEY_INVALID);
+    }
+
+    if (!(nextKey as any).id) {
+      throw new Error(SearchUsersErrors.NEXT_KEY_INVALID);
+    }
+  }
+
+  return await getUsersByUsername(username, limit, nextKey);
 };
 
 export const subscribeToChannel = async (userId: string, channelId: string) => {

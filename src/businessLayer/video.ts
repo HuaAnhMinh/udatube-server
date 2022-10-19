@@ -13,7 +13,7 @@ import {
 import CreateVideoErrors from "../errors/CreateVideoErrors";
 import UploadVideoErrors from "../errors/UploadVideoErrors";
 import UploadThumbnailErrors from "../errors/UploadThumbnailErrors";
-import GetVideosError from "../errors/GetVideosError";
+import GetVideosError from "../errors/GetVideosErrors";
 import DeleteVideoErrors from "../errors/DeleteVideoErrors";
 import SyncVideoUpdatedTimeErrors from "../errors/SyncVideoUpdatedTimeErrors";
 import UpdateVideoErrors from "../errors/UpdateVideoErrors";
@@ -102,6 +102,7 @@ export const getVideos = async (query: { title?: string, limit?: string, nextKey
       console.log('nextKey', nextKey);
     }
     catch (e) {
+      console.log(e);
       throw new Error(GetVideosError.NEXT_KEY_INVALID);
     }
 

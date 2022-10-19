@@ -1,21 +1,21 @@
 import {APIGatewayProxyEvent, APIGatewayProxyResult, Handler} from "aws-lambda";
 import {middyfy} from "@libs/lambda";
-import {getVideos} from "../../businessLayer/video";
-import GetVideosErrors from "../../errors/GetVideosErrors";
+import {getComments} from "../../businessLayer/comment";
+import GetCommentsErrors from "../../errors/GetCommentsErrors";
 
-const GetVideos: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
+const GetComments: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
   let {queryStringParameters} = event;
   if (queryStringParameters === null) {
     queryStringParameters = {};
   }
 
   try {
-    const {videos, nextKey} = await getVideos(queryStringParameters);
+    const {comments, nextKey} = await getComments(queryStringParameters);
 
     return {
       statusCode: 200,
       body: JSON.stringify({
-        videos,
+        comments,
         nextKey,
       }),
     };
@@ -24,9 +24,16 @@ const GetVideos: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (e
     console.log(e);
 
     switch (e.message) {
-      case GetVideosErrors.LIMIT_MUST_BE_NUMBER:
-      case GetVideosErrors.LIMIT_MUST_BE_GREATER_THAN_0:
-      case GetVideosErrors.NEXT_KEY_INVALID:
+      case GetCommentsErrors.FOUND_NO_VIDEO:
+        return {
+          statusCode: 404,
+          body: JSON.stringify({
+            message: e.message,
+          }),
+        };
+      case GetCommentsErrors.LIMIT_MUST_BE_NUMBER:
+      case GetCommentsErrors.LIMIT_MUST_BE_GREATER_THAN_0:
+      case GetCommentsErrors.NEXT_KEY_INVALID:
         return {
           statusCode: 400,
           body: JSON.stringify({
@@ -44,4 +51,4 @@ const GetVideos: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (e
   }
 };
 
-export const main = middyfy(GetVideos);
+export const main = middyfy(GetComments);
