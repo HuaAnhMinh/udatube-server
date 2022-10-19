@@ -29,7 +29,7 @@ export const createVideo = async (userId: string, title: string, description: st
     throw new Error(CreateVideoErrors.INVALID_TITLE);
   }
 
-  return await addVideo(userId, title.trim(), description);
+  return await addVideo(userId, title.trim(), description.trim());
 };
 
 export const findVideoById = async (videoId: string) => {
@@ -151,12 +151,16 @@ export const updateVideo = async (videoId: string, userId: string, title: string
     throw new Error(UpdateVideoErrors.INVALID_PERMISSION);
   }
 
+  if (!title.trim()) {
+    throw new Error(UpdateVideoErrors.INVALID_TITLE);
+  }
+
   const updated = {};
   if (title.trim() && title !== video.title) {
     updated['title'] = title.trim();
   }
 
-  if (description.trim() && description !== video.description) {
+  if (description.trim() && description.trim() !== video.description) {
     updated['description'] = description.trim();
   }
 

@@ -2,7 +2,7 @@ export type Comment = {
   id: string;
   userId: string;
   videoId: string;
-  comment: string;
+  content: string;
   createdAt: string;
   updatedAt: string;
 };

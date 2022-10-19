@@ -1,42 +1,43 @@
 import {ValidatedEventAPIGatewayProxyEvent} from "@libs/api-gateway";
-import schema from "@functions/UpdateVideo/schema";
+import schema from "@functions/UpdateComment/schema";
 import {middyfy} from "@libs/lambda";
-import {updateVideo} from "../../businessLayer/video";
 import {getUserId} from "@functions/Authorizer/utils";
-import UpdateVideoErrors from "../../errors/UpdateVideoErrors";
+import {updateComment} from "../../businessLayer/comment";
+import UpdateCommentErrors from "../../errors/UpdateCommentErrors";
 
-const UpdateVideo: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async (event) => {
+const UpdateComment: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async (event) => {
   try {
-    const videoId = event.pathParameters.id;
-    const userId = getUserId(event);
-    const {title, description} = event.body;
-    await updateVideo(videoId, userId, title, description);
+    const commentId = event.pathParameters.id;
+    const {content} = event.body;
+    const userId = getUserId(event as any);
+
+    await updateComment(commentId, userId, content);
     return {
       statusCode: 200,
       body: JSON.stringify({
-        message: 'Video updated successfully',
+        message: 'Comment updated successfully',
       }),
     };
   }
   catch (e) {
     console.log(e);
     switch (e.message) {
-      case UpdateVideoErrors.INVALID_TITLE:
+      case UpdateCommentErrors.CONTENT_IS_EMPTY:
         return {
           statusCode: 400,
           body: JSON.stringify({
             message: e.message,
           }),
         };
-      case UpdateVideoErrors.FOUND_NO_VIDEO:
-      case UpdateVideoErrors.FOUND_NO_USER:
+      case UpdateCommentErrors.FOUND_NO_COMMENT:
+      case UpdateCommentErrors.FOUND_NO_USER:
         return {
           statusCode: 404,
           body: JSON.stringify({
             message: e.message,
           }),
         };
-      case UpdateVideoErrors.INVALID_PERMISSION:
+      case UpdateCommentErrors.INVALID_PERMISSION:
         return {
           statusCode: 403,
           body: JSON.stringify({
@@ -47,11 +48,11 @@ const UpdateVideo: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async (ev
         return {
           statusCode: 500,
           body: JSON.stringify({
-            message: 'Internal server error',
+            message: 'Internal Server Error',
           }),
         };
     }
   }
 };
 
-export const main = middyfy(UpdateVideo);
+export const main = middyfy(UpdateComment);

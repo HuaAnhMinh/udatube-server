@@ -7,13 +7,13 @@ import CreateCommentErrors from "../../errors/CreateCommentErrors";
 
 const CreateComment: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async (event) => {
   try {
-    const {videoId, comment} = event.body;
+    const {videoId, content} = event.body;
     const userId = getUserId(event as any);
-    const newComment = await createComment(userId, videoId, comment);
+    const comment = await createComment(userId, videoId, content);
     return {
       statusCode: 201,
       body: JSON.stringify({
-        comment: newComment,
+        comment,
       }),
     };
   }
@@ -21,6 +21,13 @@ const CreateComment: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async (
     console.log(e);
 
     switch (e.message) {
+      case CreateCommentErrors.CONTENT_IS_EMPTY:
+        return {
+          statusCode: 400,
+          body: JSON.stringify({
+            error: e.message,
+          }),
+        };
       case CreateCommentErrors.FOUND_NO_USER:
       case CreateCommentErrors.FOUND_NO_VIDEO:
         return {

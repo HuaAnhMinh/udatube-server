@@ -41,6 +41,10 @@ import CreateComment from "@functions/CreateComment";
 import CreateCommentRole from "./src/roles/CreateCommentRole";
 import GetComments from "@functions/GetComments";
 import GetCommentsRole from "./src/roles/GetCommentsRole";
+import DeleteCommentRole from "./src/roles/DeleteCommentRole";
+import DeleteComment from "@functions/DeleteComment";
+import UpdateComment from "@functions/UpdateComment";
+import UpdateCommentRole from "./src/roles/UpdateCommentRole";
 
 const serverlessConfiguration: AWS = {
   service: 'udatube',
@@ -106,6 +110,8 @@ const serverlessConfiguration: AWS = {
     UndislikeVideo,
     CreateComment,
     GetComments,
+    DeleteComment,
+    UpdateComment,
   },
   package: {individually: true},
   custom: {
@@ -140,6 +146,8 @@ const serverlessConfiguration: AWS = {
       ReactVideoRole,
       CreateCommentRole,
       GetCommentsRole,
+      DeleteCommentRole,
+      UpdateCommentRole,
       UsersDynamoDBTable: {
         Type: 'AWS::DynamoDB::Table',
         Properties: {
