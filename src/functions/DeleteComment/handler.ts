@@ -3,6 +3,7 @@ import {middyfy} from "@libs/lambda";
 import {getUserId} from "@functions/Authorizer/utils";
 import {deleteComment} from "../../businessLayer/comment";
 import DeleteCommentErrors from "../../errors/DeleteCommentErrors";
+import cors from "@middy/http-cors";
 
 const DeleteComment: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
   try {
@@ -46,4 +47,4 @@ const DeleteComment: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asyn
   }
 };
 
-export const main = middyfy(DeleteComment);
+export const main = middyfy(DeleteComment).use(cors());

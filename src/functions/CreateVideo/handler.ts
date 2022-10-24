@@ -4,6 +4,7 @@ import {middyfy} from "@libs/lambda";
 import {getUserId} from "@functions/Authorizer/utils";
 import {createVideo} from "../../businessLayer/video";
 import CreateVideoErrors from "../../errors/CreateVideoErrors";
+import cors from "@middy/http-cors";
 
 const CreateVideo: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async (event) => {
   try {
@@ -40,4 +41,4 @@ const CreateVideo: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async (ev
   }
 };
 
-export const main = middyfy(CreateVideo);
+export const main = middyfy(CreateVideo).use(cors());

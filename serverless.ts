@@ -148,6 +148,20 @@ const serverlessConfiguration: AWS = {
       GetCommentsRole,
       DeleteCommentRole,
       UpdateCommentRole,
+      GatewayResponseDefault4XX: {
+        Type: 'AWS::ApiGateway::GatewayResponse',
+        Properties: {
+          ResponseParameters: {
+            'gatewayresponse.header.Access-Control-Allow-Origin': "'*'",
+            'gatewayresponse.header.Access-Control-Allow-Headers': "'*'",
+            'gatewayresponse.header.Access-Control-Allow-Methods': "'OPTIONS,GET,POST,PATCH,PUT,DELETE'",
+          },
+          ResponseType: 'DEFAULT_4XX',
+          RestApiId: {
+            Ref: 'ApiGatewayRestApi',
+          }
+        }
+      },
       UsersDynamoDBTable: {
         Type: 'AWS::DynamoDB::Table',
         Properties: {

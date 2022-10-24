@@ -1,6 +1,7 @@
 import {APIGatewayProxyEvent, APIGatewayProxyResult, Handler} from "aws-lambda";
 import {middyfy} from "@libs/lambda";
 import {findVideoById} from "../../businessLayer/video";
+import cors from "@middy/http-cors";
 
 const GetVideo: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
   const videoId = event.pathParameters.id;
@@ -33,4 +34,4 @@ const GetVideo: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (ev
   }
 };
 
-export const main = middyfy(GetVideo);
+export const main = middyfy(GetVideo).use(cors());

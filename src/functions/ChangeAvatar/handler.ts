@@ -2,6 +2,7 @@ import {APIGatewayProxyEvent, APIGatewayProxyResult, Handler} from "aws-lambda";
 import {middyfy} from "@libs/lambda";
 import {getUserId} from "@functions/Authorizer/utils";
 import {changeAvatar} from "../../businessLayer/user";
+import cors from "@middy/http-cors";
 
 const ChangeAvatar: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
   try {
@@ -25,4 +26,4 @@ const ChangeAvatar: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async
   }
 };
 
-export const main = middyfy(ChangeAvatar);
+export const main = middyfy(ChangeAvatar).use(cors());

@@ -3,6 +3,7 @@ import {middyfy} from "@libs/lambda";
 import {getUserId} from "@functions/Authorizer/utils";
 import {createUser} from "../../businessLayer/user";
 import RegisterErrors from "../../errors/RegisterErrors";
+import cors from "@middy/http-cors";
 
 const Register: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
   const userId = getUserId(event);
@@ -36,4 +37,4 @@ const Register: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (ev
   }
 };
 
-export const main = middyfy(Register);
+export const main = middyfy(Register).use(cors());

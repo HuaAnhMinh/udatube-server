@@ -3,6 +3,7 @@ import {middyfy} from "@libs/lambda";
 import {getUserId} from "@functions/Authorizer/utils";
 import {uploadThumbnail} from "../../businessLayer/video";
 import UploadThumbnailErrors from "../../errors/UploadThumbnailErrors";
+import cors from "@middy/http-cors";
 
 const UploadThumbnail: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
   try {
@@ -45,4 +46,4 @@ const UploadThumbnail: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = as
   }
 };
 
-export const main = middyfy(UploadThumbnail);
+export const main = middyfy(UploadThumbnail).use(cors());

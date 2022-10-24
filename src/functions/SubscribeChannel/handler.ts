@@ -3,6 +3,7 @@ import {middyfy} from "@libs/lambda";
 import {getUserId} from "@functions/Authorizer/utils";
 import {subscribeToChannel} from "../../businessLayer/user";
 import SubscribeChannelErrors from "../../errors/SubscribeChannelErrors";
+import cors from "@middy/http-cors";
 
 const SubscribeChannel: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
   const userId = getUserId(event);
@@ -47,4 +48,4 @@ const SubscribeChannel: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = a
   }
 };
 
-export const main = middyfy(SubscribeChannel);
+export const main = middyfy(SubscribeChannel).use(cors());

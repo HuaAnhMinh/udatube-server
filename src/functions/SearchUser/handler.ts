@@ -2,6 +2,7 @@ import {APIGatewayProxyEvent, APIGatewayProxyResult, Handler} from "aws-lambda";
 import {middyfy} from "@libs/lambda";
 import {searchUsers} from "../../businessLayer/user";
 import SearchUsersErrors from "../../errors/SearchUsersErrors";
+import cors from "@middy/http-cors";
 
 const SearchUser: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
   let {queryStringParameters} = event;
@@ -44,4 +45,4 @@ const SearchUser: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (
   }
 };
 
-export const main = middyfy(SearchUser);
+export const main = middyfy(SearchUser).use(cors());

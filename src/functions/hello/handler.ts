@@ -3,6 +3,7 @@ import { formatJSONResponse } from '@libs/api-gateway';
 import { middyfy } from '@libs/lambda';
 
 import schema from './schema';
+import cors from "@middy/http-cors";
 
 const hello: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async (event) => {
   console.log('event: ', event);
@@ -12,4 +13,4 @@ const hello: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async (event) =
   });
 };
 
-export const main = middyfy(hello);
+export const main = middyfy(hello).use(cors());

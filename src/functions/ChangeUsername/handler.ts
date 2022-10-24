@@ -5,6 +5,7 @@ import schema from "@functions/ChangeUsername/schema";
 import {APIGatewayProxyEvent} from "aws-lambda";
 import {editUsername} from "../../businessLayer/user";
 import ChangeUsernameErrors from "../../errors/ChangeUsernameErrors";
+import cors from "@middy/http-cors";
 
 const ChangeUsername: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async (event) => {
   const userId = getUserId(event as unknown as APIGatewayProxyEvent);
@@ -46,4 +47,4 @@ const ChangeUsername: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async 
   }
 };
 
-export const main = middyfy(ChangeUsername);
+export const main = middyfy(ChangeUsername).use(cors());

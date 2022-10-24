@@ -3,6 +3,7 @@ import {middyfy} from "@libs/lambda";
 import {getUserId} from "@functions/Authorizer/utils";
 import {unsubscribeFromChannel} from "../../businessLayer/user";
 import UnsubscribeChannelErrors from "../../errors/UnsubscribeChannelErrors";
+import cors from "@middy/http-cors";
 
 const UnsubscribeChannel: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
   const userId = getUserId(event);
@@ -47,4 +48,4 @@ const UnsubscribeChannel: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> =
   }
 };
 
-export const main = middyfy(UnsubscribeChannel);
+export const main = middyfy(UnsubscribeChannel).use(cors());

@@ -2,6 +2,7 @@ import {APIGatewayProxyEvent, APIGatewayProxyResult, Handler} from "aws-lambda";
 import {middyfy} from "@libs/lambda";
 import {getComments} from "../../businessLayer/comment";
 import GetCommentsErrors from "../../errors/GetCommentsErrors";
+import cors from "@middy/http-cors";
 
 const GetComments: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
   let {queryStringParameters} = event;
@@ -51,4 +52,4 @@ const GetComments: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async 
   }
 };
 
-export const main = middyfy(GetComments);
+export const main = middyfy(GetComments).use(cors());

@@ -3,6 +3,7 @@ import {middyfy} from "@libs/lambda";
 import {getUserId} from "@functions/Authorizer/utils";
 import {uploadVideo} from "../../businessLayer/video";
 import UploadVideoErrors from "../../errors/UploadVideoErrors";
+import cors from "@middy/http-cors";
 
 const UploadVideo: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
   try {
@@ -45,4 +46,4 @@ const UploadVideo: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async 
   }
 };
 
-export const main = middyfy(UploadVideo);
+export const main = middyfy(UploadVideo).use(cors());

@@ -3,6 +3,7 @@ import {middyfy} from "@libs/lambda";
 import {getUserId} from "@functions/Authorizer/utils";
 import {unreactVideo} from "../../businessLayer/video";
 import ReactVideoErrors from "../../errors/ReactVideoErrors";
+import cors from "@middy/http-cors";
 
 const UndislikeVideo: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
   try {
@@ -38,4 +39,4 @@ const UndislikeVideo: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
   }
 };
 
-export const main = middyfy(UndislikeVideo);
+export const main = middyfy(UndislikeVideo).use(cors());

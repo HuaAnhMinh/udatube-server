@@ -2,6 +2,7 @@ import {APIGatewayProxyEvent, APIGatewayProxyResult, Handler} from "aws-lambda";
 import {middyfy} from "@libs/lambda";
 import {getVideos} from "../../businessLayer/video";
 import GetVideosErrors from "../../errors/GetVideosErrors";
+import cors from "@middy/http-cors";
 
 const GetVideos: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
   let {queryStringParameters} = event;
@@ -44,4 +45,4 @@ const GetVideos: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (e
   }
 };
 
-export const main = middyfy(GetVideos);
+export const main = middyfy(GetVideos).use(cors());

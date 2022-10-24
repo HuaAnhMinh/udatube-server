@@ -4,6 +4,7 @@ import {middyfy} from "@libs/lambda";
 import {getUserId} from "@functions/Authorizer/utils";
 import {updateComment} from "../../businessLayer/comment";
 import UpdateCommentErrors from "../../errors/UpdateCommentErrors";
+import cors from "@middy/http-cors";
 
 const UpdateComment: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async (event) => {
   try {
@@ -55,4 +56,4 @@ const UpdateComment: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async (
   }
 };
 
-export const main = middyfy(UpdateComment);
+export const main = middyfy(UpdateComment).use(cors());

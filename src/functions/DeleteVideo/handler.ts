@@ -3,6 +3,7 @@ import {middyfy} from "@libs/lambda";
 import {getUserId} from "@functions/Authorizer/utils";
 import {deleteVideo} from "../../businessLayer/video";
 import DeleteVideoErrors from "../../errors/DeleteVideoErrors";
+import cors from "@middy/http-cors";
 
 const DeleteVideo: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
   try {
@@ -46,4 +47,4 @@ const DeleteVideo: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async 
   }
 };
 
-export const main = middyfy(DeleteVideo);
+export const main = middyfy(DeleteVideo).use(cors());
