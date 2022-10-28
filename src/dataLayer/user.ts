@@ -54,7 +54,7 @@ export const getUsersByUsername = async (username: string, limit: number, nextKe
     ExpressionAttributeValues: {
       ':username': username,
     },
-    ProjectionExpression: 'id, username',
+    ProjectionExpression: 'id, username, totalSubscribers',
     ExclusiveStartKey: nextKey,
     Limit: limit,
   }).promise();
