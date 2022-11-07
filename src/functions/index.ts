@@ -23,3 +23,4 @@ export { default as CreateComment } from './CreateComment';
 export { default as GetComments } from './GetComments';
 export { default as DeleteComment } from './DeleteComment';
 export { default as UpdateComment } from './UpdateComment';
+export { default as GetSubscribedChannels } from './GetSubscribedChannels';

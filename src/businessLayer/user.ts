@@ -4,7 +4,8 @@ import {
   getUserById,
   getUsersByUsername,
   subscribeToUser,
-  unsubscribeFromUser
+  unsubscribeFromUser,
+  getSubscribedChannels as _getSubscribedChannels,
 } from "../dataLayer/user";
 import RegisterErrors from "../errors/RegisterErrors";
 import SubscribeChannelErrors from "../errors/SubscribeChannelErrors";
@@ -127,3 +128,7 @@ export const editUsername = async (userId: string, newUsername: string) => {
 export const changeAvatar = async (userId: string) => {
   return await generatePresignedUrlForAvatar(userId);
 }
+
+export const getSubscribedChannels = async (userId: string) => {
+  return await _getSubscribedChannels(userId);
+};

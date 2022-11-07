@@ -137,3 +137,21 @@ export const generatePresignedUrlForAvatar = async (userId: string) => {
     ContentType: 'image/png',
   });
 };
+
+export const getSubscribedChannels = async (userId: string) => {
+  const user = await getUserById(userId);
+  if (!user) {
+    return null;
+  }
+
+  const result = await docClient.batchGet({
+    RequestItems: {
+      [USERS_TABLE]: {
+        Keys: user.subscribedChannels.map((id) => ({id})),
+        ProjectionExpression: 'id, username, totalSubscribers',
+      },
+    },
+  }).promise();
+
+  return result.Responses[USERS_TABLE] as ShortFormUser[];
+};

@@ -45,6 +45,8 @@ import DeleteCommentRole from "./src/roles/DeleteCommentRole";
 import DeleteComment from "@functions/DeleteComment";
 import UpdateComment from "@functions/UpdateComment";
 import UpdateCommentRole from "./src/roles/UpdateCommentRole";
+import GetSubscribedChannels from "@functions/GetSubscribedChannels";
+import GetSubscribedChannelsRole from "./src/roles/GetSubscribedChannelsRole";
 
 const serverlessConfiguration: AWS = {
   service: 'udatube',
@@ -112,6 +114,7 @@ const serverlessConfiguration: AWS = {
     GetComments,
     DeleteComment,
     UpdateComment,
+    GetSubscribedChannels,
   },
   package: {individually: true},
   custom: {
@@ -148,6 +151,7 @@ const serverlessConfiguration: AWS = {
       GetCommentsRole,
       DeleteCommentRole,
       UpdateCommentRole,
+      GetSubscribedChannelsRole,
       GatewayResponseDefault4XX: {
         Type: 'AWS::ApiGateway::GatewayResponse',
         Properties: {
