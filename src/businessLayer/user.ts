@@ -1,17 +1,20 @@
 import {
   changeUsername,
-  createUser as addUserToDB, generatePresignedUrlForAvatar,
+  createUser as addUserToDB,
+  generatePresignedUrlForAvatar,
+  getSubscribedChannels as _getSubscribedChannels,
   getUserById,
   getUsersByUsername,
+  resizeAvatarToS3,
   subscribeToUser,
   unsubscribeFromUser,
-  getSubscribedChannels as _getSubscribedChannels,
 } from "../dataLayer/user";
 import RegisterErrors from "../errors/RegisterErrors";
 import SubscribeChannelErrors from "../errors/SubscribeChannelErrors";
 import UnsubscribeChannelErrors from "../errors/UnsubscribeChannelErrors";
 import ChangeUsernameErrors from "../errors/ChangeUsernameErrors";
 import SearchUsersErrors from "../errors/SearchUsersErrors";
+import {resizeImage} from "@libs/image";
 
 export const getProfile = async (id: string) => {
   return await getUserById(id);
@@ -131,4 +134,12 @@ export const changeAvatar = async (userId: string) => {
 
 export const getSubscribedChannels = async (userId: string) => {
   return await _getSubscribedChannels(userId);
+};
+
+export const resizeAvatar = async (key: string) => {
+  const buffer = await resizeImage(`https://udatube-avatars-dev.s3.amazonaws.com/${key}`, 500, 500);
+  if (!buffer) {
+    return;
+  }
+  return await resizeAvatarToS3(buffer, key);
 };

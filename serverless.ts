@@ -47,6 +47,10 @@ import UpdateComment from "@functions/UpdateComment";
 import UpdateCommentRole from "./src/roles/UpdateCommentRole";
 import GetSubscribedChannels from "@functions/GetSubscribedChannels";
 import GetSubscribedChannelsRole from "./src/roles/GetSubscribedChannelsRole";
+import ResizeAvatarRole from "./src/roles/ResizeAvatarRole";
+import ResizeAvatar from "@functions/ResizeAvatar";
+import ResizeThumbnailRole from "./src/roles/ResizeThumbnailRole";
+import ResizeThumbnail from "@functions/ResizeThumbnail";
 
 const serverlessConfiguration: AWS = {
   service: 'udatube',
@@ -81,6 +85,7 @@ const serverlessConfiguration: AWS = {
       VIDEOS_BUCKET: 'udatube-videos-${self:provider.stage}',
       THUMBNAILS_BUCKET: 'udatube-thumbnails-${self:provider.stage}',
       VIDEOS_TOPIC: 'UdaTubeVideosTopic-${self:provider.stage}',
+      AVATARS_TOPIC: 'UdaTubeAvatarsTopic-${self:provider.stage}',
       JWKS_URI: 'https://huaanhminh.us.auth0.com/.well-known/jwks.json',
       AVATAR_SIGNED_URL_EXPIRATION: '300',
       VIDEO_SIGNED_URL_EXPIRATION: '3600',
@@ -115,6 +120,8 @@ const serverlessConfiguration: AWS = {
     DeleteComment,
     UpdateComment,
     GetSubscribedChannels,
+    ResizeAvatar,
+    ResizeThumbnail,
   },
   package: {individually: true},
   custom: {
@@ -152,6 +159,8 @@ const serverlessConfiguration: AWS = {
       DeleteCommentRole,
       UpdateCommentRole,
       GetSubscribedChannelsRole,
+      ResizeAvatarRole,
+      ResizeThumbnailRole,
       GatewayResponseDefault4XX: {
         Type: 'AWS::ApiGateway::GatewayResponse',
         Properties: {
@@ -211,10 +220,89 @@ const serverlessConfiguration: AWS = {
           }],
         },
       },
+      VideosTopic: {
+        Type: 'AWS::SNS::Topic',
+        Properties: {
+          DisplayName: 'UdaTube videos bucket topic',
+          TopicName: '${self:provider.environment.VIDEOS_TOPIC}',
+        },
+      },
+      VideosTopicPolicy: {
+        Type: 'AWS::SNS::TopicPolicy',
+        Properties: {
+          PolicyDocument: {
+            Version: '2012-10-17',
+            Statement: [{
+              Effect: 'Allow',
+              Principal: {
+                AWS: '*',
+              },
+              Action: 'sns:Publish',
+              Resource: {
+                Ref: 'VideosTopic',
+              },
+              Condition: {
+                ArnLike: {
+                  'AWS:SourceArn': [
+                    'arn:aws:s3:::${self:provider.environment.VIDEOS_BUCKET}',
+                    'arn:aws:s3:::${self:provider.environment.THUMBNAILS_BUCKET}',
+                  ],
+                },
+              },
+            }],
+          },
+          Topics: [{
+            Ref: 'VideosTopic',
+          }],
+        },
+      },
+      AvatarsTopic: {
+        Type: 'AWS::SNS::Topic',
+        Properties: {
+          DisplayName: 'UdaTube avatar bucket topic',
+          TopicName: '${self:provider.environment.AVATARS_TOPIC}',
+        },
+      },
+      AvatarsTopicPolicy: {
+        Type: 'AWS::SNS::TopicPolicy',
+        Properties: {
+          PolicyDocument: {
+            Version: '2012-10-17',
+            Statement: [{
+              Effect: 'Allow',
+              Principal: {
+                AWS: '*',
+              },
+              Action: 'sns:Publish',
+              Resource: {
+                Ref: 'AvatarsTopic',
+              },
+              Condition: {
+                ArnLike: {
+                  'AWS:SourceArn': [
+                    'arn:aws:s3:::${self:provider.environment.AVATARS_BUCKET}',
+                  ],
+                },
+              },
+            }],
+          },
+          Topics: [{
+            Ref: 'AvatarsTopic',
+          }],
+        },
+      },
       AvatarsS3Bucket: {
         Type: 'AWS::S3::Bucket',
         Properties: {
           BucketName: '${self:provider.environment.AVATARS_BUCKET}',
+          NotificationConfiguration: {
+            TopicConfigurations: [{
+              Event: 's3:ObjectCreated:*',
+              Topic: {
+                Ref: 'AvatarsTopic',
+              },
+            }],
+          },
           CorsConfiguration: {
             CorsRules: [{
               AllowedHeaders: ['*'],
@@ -232,10 +320,9 @@ const serverlessConfiguration: AWS = {
             Id: '${self:provider.environment.AVATARS_BUCKET}-policy',
             Version: '2012-10-17',
             Statement: [{
-              Sid: 'PublicReadForGetBucketObjects',
               Effect: 'Allow',
               Principal: '*',
-              Action: 's3:GetObject',
+              Action: 's3:*',
               Resource: 'arn:aws:s3:::${self:provider.environment.AVATARS_BUCKET}/*',
             }],
           },
@@ -251,7 +338,7 @@ const serverlessConfiguration: AWS = {
               Event: 's3:ObjectCreated:*',
               Topic: {
                 Ref: 'VideosTopic',
-              }
+              },
             }],
           },
           CorsConfiguration: {
@@ -316,42 +403,6 @@ const serverlessConfiguration: AWS = {
             }],
           },
           Bucket: '${self:provider.environment.THUMBNAILS_BUCKET}',
-        },
-      },
-      VideosTopic: {
-        Type: 'AWS::SNS::Topic',
-        Properties: {
-          DisplayName: 'UdaTube videos bucket topic',
-          TopicName: '${self:provider.environment.VIDEOS_TOPIC}',
-        },
-      },
-      SNSTopicPolicy: {
-        Type: 'AWS::SNS::TopicPolicy',
-        Properties: {
-          PolicyDocument: {
-            Version: '2012-10-17',
-            Statement: [{
-              Effect: 'Allow',
-              Principal: {
-                AWS: '*',
-              },
-              Action: 'sns:Publish',
-              Resource: {
-                Ref: 'VideosTopic',
-              },
-              Condition: {
-                ArnLike: {
-                  'AWS:SourceArn': [
-                    'arn:aws:s3:::${self:provider.environment.VIDEOS_BUCKET}',
-                    'arn:aws:s3:::${self:provider.environment.THUMBNAILS_BUCKET}',
-                  ],
-                },
-              },
-            }],
-          },
-          Topics: [{
-            Ref: 'VideosTopic',
-          }],
         },
       },
     },

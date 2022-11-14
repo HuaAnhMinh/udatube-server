@@ -1,14 +1,16 @@
 import {getProfile} from "./user";
 import {
   createVideo as addVideo,
+  deleteVideo as removeVideo,
   findVideoById as findVideo,
   generatePresignedUrlUploadThumbnail,
   generatePresignedUrlUploadVideo,
   getVideos as fetchVideos,
-  deleteVideo as removeVideo,
-  updateVideo as _updateVideo, increaseVideoViews,
+  increaseVideoViews,
   reactVideo as _reactVideo,
+  resizeThumbnailToS3,
   unreactVideo as _unreactVideo,
+  updateVideo as _updateVideo,
 } from '../dataLayer/video';
 import CreateVideoErrors from "../errors/CreateVideoErrors";
 import UploadVideoErrors from "../errors/UploadVideoErrors";
@@ -18,6 +20,7 @@ import DeleteVideoErrors from "../errors/DeleteVideoErrors";
 import SyncVideoUpdatedTimeErrors from "../errors/SyncVideoUpdatedTimeErrors";
 import UpdateVideoErrors from "../errors/UpdateVideoErrors";
 import ReactVideoErrors from "../errors/ReactVideoErrors";
+import {resizeImage} from "@libs/image";
 
 export const createVideo = async (userId: string, title: string, description: string) => {
   const user = await getProfile(userId);
@@ -204,3 +207,11 @@ export const unreactVideo = async (videoId: string, userId: string, reaction: 'l
 
   return await _unreactVideo(videoId, userId, reaction);
 }
+
+export const resizeThumbnail = async (key: string) => {
+  const buffer = await resizeImage(`https://udatube-thumbnails-dev.s3.amazonaws.com/${key}`, 320, 180);
+  if (!buffer) {
+    return
+  }
+  return await resizeThumbnailToS3(buffer, key);
+};

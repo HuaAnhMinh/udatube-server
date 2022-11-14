@@ -1,7 +1,7 @@
-import { JwtHeader, decode, verify } from 'jsonwebtoken'
+import {decode, JwtHeader, verify} from 'jsonwebtoken'
 import JwksClient from "@functions/Authorizer/JwksClient";
 import {APIGatewayProxyEvent} from "aws-lambda";
-import { createHash } from 'crypto';
+import {createHash} from 'crypto';
 
 type JwtPayload = {
   iss?: string;

@@ -2,8 +2,9 @@ import {getProfile} from "./user";
 import {findVideoById} from "./video";
 import {
   createComment as _createComment,
+  deleteComment as _deleteComment,
+  findCommentById,
   findCommentsByVideoIdWithPagination as findComments,
-  deleteComment as _deleteComment, findCommentById,
   updateComment as _updateComment,
 } from '../dataLayer/comment';
 import CreateCommentErrors from "../errors/CreateCommentErrors";

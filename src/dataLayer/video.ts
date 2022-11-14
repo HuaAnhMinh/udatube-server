@@ -1,6 +1,6 @@
-import { createHash } from 'crypto';
+import {createHash} from 'crypto';
 import * as AWS from 'aws-sdk';
-import { v4 } from 'uuid';
+import {v4} from 'uuid';
 import {ShortFormVideo, Video} from "../models/video";
 import {getUserById} from "./user";
 import {findCommentsByVideoId} from "./comment";
@@ -254,5 +254,13 @@ export const unreactVideo = async (videoId: string, userId: string, likeOrDislik
     TableName: VIDEOS_TABLE,
     Key: {id: videoId},
     UpdateExpression: 'REMOVE ' + likeOrDislike + '[' + index + ']',
+  }).promise();
+};
+
+export const resizeThumbnailToS3 = async (image: Buffer, key: string) => {
+  return await s3.putObject({
+    Bucket: THUMBNAILS_BUCKET,
+    Key: key,
+    Body: image,
   }).promise();
 };

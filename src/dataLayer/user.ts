@@ -144,6 +144,10 @@ export const getSubscribedChannels = async (userId: string) => {
     return null;
   }
 
+  if (user.subscribedChannels.length === 0) {
+    return [];
+  }
+
   const result = await docClient.batchGet({
     RequestItems: {
       [USERS_TABLE]: {
@@ -154,4 +158,12 @@ export const getSubscribedChannels = async (userId: string) => {
   }).promise();
 
   return result.Responses[USERS_TABLE] as ShortFormUser[];
+};
+
+export const resizeAvatarToS3 = async (image: Buffer, key: string) => {
+  return await s3.putObject({
+    Bucket: AVATARS_BUCKET,
+    Key: key,
+    Body: image,
+  }).promise();
 };
