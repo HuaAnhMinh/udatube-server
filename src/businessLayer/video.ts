@@ -45,6 +45,23 @@ export const findVideoById = async (videoId: string) => {
   return await findVideo(videoId);
 };
 
+export const findVideoByIdToUpdate = async (videoId: string, userId: string) => {
+  const user = await getProfile(userId);
+  if (!user) {
+    throw new Error(UpdateVideoErrors.FOUND_NO_USER);
+  }
+
+  if (user.videos.indexOf(videoId) === -1) {
+    throw new Error(UpdateVideoErrors.FOUND_NO_VIDEO);
+  }
+
+  const video = await findVideo(videoId);
+  if (!video) {
+    throw new Error(UpdateVideoErrors.FOUND_NO_VIDEO);
+  }
+  return video;
+};
+
 export const uploadVideo = async (videoId: string, userId: string) => {
   const user = await getProfile(userId);
   if (!user) {
@@ -209,7 +226,7 @@ export const unreactVideo = async (videoId: string, userId: string, reaction: 'l
 }
 
 export const resizeThumbnail = async (key: string) => {
-  const buffer = await resizeImage(`https://udatube-thumbnails-dev.s3.amazonaws.com/${key}`, 320, 180);
+  const buffer = await resizeImage(`https://udatube-thumbnails-dev.s3.amazonaws.com/${key}`, 800, 450);
   if (!buffer) {
     return
   }
