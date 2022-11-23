@@ -1,6 +1,7 @@
 export type User = {
   id: string;
   username: string;
+  searchUsername: string;
   subscribedChannels: string[];
   videos: string[];
   totalSubscribers: number;

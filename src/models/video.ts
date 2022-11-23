@@ -2,6 +2,7 @@ export type Video = {
   id: string;
   userId: string;
   title: string;
+  searchTitle: string;
   description: string;
   createdAt: string;
   updatedAt: string;

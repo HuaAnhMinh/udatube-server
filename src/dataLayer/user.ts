@@ -16,6 +16,7 @@ export const createUser = async (id: string) => {
     Item: {
       id: id,
       username: defaultUsername,
+      searchUsername: defaultUsername.toLowerCase(),
       subscribedChannels: [],
       videos: [],
       totalSubscribers: 0,
@@ -50,9 +51,9 @@ export const getUserById = async (id: string) => {
 export const getUsersByUsername = async (username: string, limit: number, nextKey: any) => {
   const result = await docClient.scan({
     TableName: USERS_TABLE,
-    FilterExpression: 'contains(username, :username)',
+    FilterExpression: 'contains(searchUsername, :searchUsername)',
     ExpressionAttributeValues: {
-      ':username': username,
+      ':searchUsername': username.toLowerCase(),
     },
     ProjectionExpression: 'id, username, totalSubscribers',
     ExclusiveStartKey: nextKey,
@@ -122,9 +123,10 @@ export const changeUsername = async (userId: string, newUsername: string) => {
     Key: {
       id: userId,
     },
-    UpdateExpression: 'SET username = :newUsername',
+    UpdateExpression: 'SET username = :newUsername, searchUsername = :newSearchUsername',
     ExpressionAttributeValues: {
       ':newUsername': newUsername,
+      ':newSearchUsername': newUsername.toLowerCase(),
     },
   }).promise();
 };

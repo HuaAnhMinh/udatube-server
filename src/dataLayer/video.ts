@@ -24,6 +24,7 @@ export const createVideo = async (userId: string, title: string, description: st
     id: createHash('sha256').update(v4()).digest('hex'),
     userId,
     title,
+    searchTitle: title.toLowerCase(),
     description,
     createdAt,
     updatedAt: createdAt,
@@ -83,9 +84,9 @@ export const getVideos = async (title: string, limit: number, nextKey: any) => {
     TableName: VIDEOS_TABLE,
     Limit: limit,
     ExclusiveStartKey: nextKey,
-    FilterExpression: 'contains(title, :title)',
+    FilterExpression: 'contains(searchTitle, :searchTitle)',
     ExpressionAttributeValues: {
-      ':title': title,
+      ':searchTitle': title.toLowerCase(),
     },
     ProjectionExpression: 'id, userId, title, totalViews, likes, dislikes',
   }).promise();
@@ -169,9 +170,10 @@ export const updateVideo = async (videoId: string, updated: {
 }) => {
   let updateExpression = '';
   const expressionAttributeValues = {};
-  if (updated.title) {
-    updateExpression += 'title = :title, ';
-    expressionAttributeValues[':title'] = updated.title;
+  if (updated.title.trim()) {
+    updateExpression += 'title = :title, searchTitle = :searchTitle, ';
+    expressionAttributeValues[':title'] = updated.title.trim();
+    expressionAttributeValues[':searchTitle'] = updated.title.trim().toLowerCase();
   }
   if (updated.description) {
     updateExpression += 'description = :description, ';
