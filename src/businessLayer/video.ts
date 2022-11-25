@@ -42,7 +42,9 @@ export const findVideoById = async (videoId: string) => {
   catch (e) {
     console.log(e);
   }
-  return await findVideo(videoId);
+  const video = await findVideo(videoId);
+  video.username = (await getProfile(video.userId)).username;
+  return video;
 };
 
 export const findVideoByIdToUpdate = async (videoId: string, userId: string) => {
