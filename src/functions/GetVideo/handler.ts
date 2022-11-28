@@ -39,7 +39,7 @@ const GetVideo: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (ev
   }
 
   try {
-    const video = await findVideoById(videoId);
+    const video = await findVideoById(videoId, true);
     if (!video) {
       return {
         statusCode: 404,

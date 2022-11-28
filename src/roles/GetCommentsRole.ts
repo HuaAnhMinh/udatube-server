@@ -34,6 +34,14 @@ export default {
           Resource: [
             'arn:aws:dynamodb:us-east-1:*:table/${self:provider.environment.VIDEOS_TABLE}',
           ],
+        }, {
+          Effect: 'Allow',
+          Action: [
+            'dynamodb:GetItem',
+          ],
+          Resource: [
+            'arn:aws:dynamodb:us-east-1:*:table/${self:provider.environment.USERS_TABLE}',
+          ],
         }],
       },
     }],

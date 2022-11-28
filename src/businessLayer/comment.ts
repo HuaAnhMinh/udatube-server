@@ -66,7 +66,11 @@ export const getComments = async (query: { videoId?: string; limit?: string; nex
     }
   }
 
-  return await findComments(videoId, limit, nextKey);
+  const result = await findComments(videoId, limit, nextKey);
+  for (const comment of result.comments) {
+    comment.username = (await getProfile(comment.userId)).username;
+  }
+  return result;
 };
 
 export const deleteComment = async (id: string, userId: string) => {

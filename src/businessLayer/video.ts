@@ -35,9 +35,11 @@ export const createVideo = async (userId: string, title: string, description: st
   return await addVideo(userId, title.trim(), description.trim());
 };
 
-export const findVideoById = async (videoId: string) => {
+export const findVideoById = async (videoId: string, increaseView?: boolean) => {
   try {
-    await increaseVideoViews(videoId);
+    if (increaseView) {
+      await increaseVideoViews(videoId);
+    }
   }
   catch (e) {
     console.log(e);
