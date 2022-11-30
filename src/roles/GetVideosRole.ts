@@ -22,9 +22,18 @@ export default {
           Effect: 'Allow',
           Action: [
             'dynamodb:Scan',
+            'dynamodb:Query',
           ],
           Resource: [
             'arn:aws:dynamodb:us-east-1:*:table/${self:provider.environment.VIDEOS_TABLE}',
+          ],
+        }, {
+          Effect: 'Allow',
+          Action: [
+            'dynamodb:Query',
+          ],
+          Resource: [
+            'arn:aws:dynamodb:us-east-1:*:table/${self:provider.environment.VIDEOS_TABLE}/index/${self:provider.environment.VIDEOS_TABLE_INDEX}',
           ],
         }, {
           Effect: 'Allow',

@@ -90,6 +90,8 @@ const serverlessConfiguration: AWS = {
       AVATAR_SIGNED_URL_EXPIRATION: '300',
       VIDEO_SIGNED_URL_EXPIRATION: '3600',
       THUMBNAIL_SIGNED_URL_EXPIRATION: '300',
+      COMMENTS_TABLE_INDEX: 'UdaTubeComments-Index-${self:provider.stage}',
+      VIDEOS_TABLE_INDEX: 'UdaTubeVideos-Index-${self:provider.stage}'
     },
   },
   // import the function via paths
@@ -198,10 +200,29 @@ const serverlessConfiguration: AWS = {
           AttributeDefinitions: [{
             AttributeName: 'id',
             AttributeType: 'S',
+          }, {
+            AttributeName: 'userId',
+            AttributeType: 'S',
+          }, {
+            AttributeName: 'updatedAt',
+            AttributeType: 'S'
           }],
           KeySchema: [{
             AttributeName: 'id',
             KeyType: 'HASH',
+          }],
+          GlobalSecondaryIndexes: [{
+            IndexName: '${self:provider.environment.VIDEOS_TABLE_INDEX}',
+            KeySchema: [{
+              AttributeName: 'userId',
+              KeyType: 'HASH',
+            }, {
+              AttributeName: 'updatedAt',
+              KeyType: 'RANGE',
+            }],
+            Projection: {
+              ProjectionType: 'ALL',
+            },
           }],
         },
       },
@@ -213,10 +234,29 @@ const serverlessConfiguration: AWS = {
           AttributeDefinitions: [{
             AttributeName: 'id',
             AttributeType: 'S',
+          }, {
+            AttributeName: 'videoId',
+            AttributeType: 'S',
+          }, {
+            AttributeName: 'createdAt',
+            AttributeType: 'S',
           }],
           KeySchema: [{
             AttributeName: 'id',
             KeyType: 'HASH',
+          }],
+          GlobalSecondaryIndexes: [{
+            IndexName: '${self:provider.environment.COMMENTS_TABLE_INDEX}',
+            KeySchema: [{
+              AttributeName: 'videoId',
+              KeyType: 'HASH',
+            }, {
+              AttributeName: 'createdAt',
+              KeyType: 'RANGE',
+            }],
+            Projection: {
+              ProjectionType: 'ALL',
+            },
           }],
         },
       },

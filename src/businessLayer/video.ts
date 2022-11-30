@@ -6,6 +6,7 @@ import {
   generatePresignedUrlUploadThumbnail,
   generatePresignedUrlUploadVideo,
   getVideos as fetchVideos,
+  getVideosByUserId as fetchVideosByUserId,
   increaseVideoViews,
   reactVideo as _reactVideo,
   resizeThumbnailToS3,
@@ -21,6 +22,7 @@ import SyncVideoUpdatedTimeErrors from "../errors/SyncVideoUpdatedTimeErrors";
 import UpdateVideoErrors from "../errors/UpdateVideoErrors";
 import ReactVideoErrors from "../errors/ReactVideoErrors";
 import {resizeImage} from "@libs/image";
+import * as console from "console";
 
 export const createVideo = async (userId: string, title: string, description: string) => {
   const user = await getProfile(userId);
@@ -102,9 +104,7 @@ export const uploadThumbnail = async (videoId: string, userId: string) => {
   return await generatePresignedUrlUploadThumbnail(videoId);
 };
 
-export const getVideos = async (query: { title?: string, limit?: string, nextKey?: string }) => {
-  const title = query.title || '';
-
+export const getVideos = async (query: { userId?: string, title?: string, limit?: string, nextKey?: string }) => {
   let limit = query.limit || 10;
   if (typeof limit === 'string') {
     limit = parseInt(limit);
@@ -135,7 +135,19 @@ export const getVideos = async (query: { title?: string, limit?: string, nextKey
     }
   }
 
-  const result = await fetchVideos(title, limit, nextKey);
+  let result;
+  if (query.userId) {
+    const user = await getProfile(query.userId);
+    if (!user) {
+      throw new Error(GetVideosError.FOUND_NO_USER);
+    }
+    result = await fetchVideosByUserId(query.userId, limit, nextKey);
+  }
+  else {
+    const title = query.title || '';
+    result = await fetchVideos(title, limit, nextKey);
+  }
+
   for (const video of result.videos) {
     video.username = (await getProfile(video.userId)).username;
   }

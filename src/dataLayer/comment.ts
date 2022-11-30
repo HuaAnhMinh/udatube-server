@@ -6,6 +6,7 @@ import {Comment} from "../models/comment";
 const docClient = new AWS.DynamoDB.DocumentClient();
 
 const COMMENTS_TABLE = process.env.COMMENTS_TABLE;
+const COMMENTS_TABLE_INDEX = process.env.COMMENTS_TABLE_INDEX;
 
 export const createComment = async (userId: string, videoId: string, content: string) => {
   const createdAt = new Date().toISOString();
@@ -39,14 +40,16 @@ export const findCommentsByVideoId = async (videoId: string): Promise<Comment[]>
 };
 
 export const findCommentsByVideoIdWithPagination = async (videoId: string, limit: number, nextKey: any): Promise<{ comments: Comment[], nextKey: string | null }> => {
-  const result = await docClient.scan({
+  const result = await docClient.query({
     TableName: COMMENTS_TABLE,
+    IndexName: COMMENTS_TABLE_INDEX,
+    KeyConditionExpression: 'videoId = :videoId',
     Limit: limit,
     ExclusiveStartKey: nextKey,
-    FilterExpression: 'videoId = :videoId',
     ExpressionAttributeValues: {
       ':videoId': videoId,
     },
+    ScanIndexForward: false,
   }).promise();
 
   return {

@@ -21,10 +21,11 @@ export default {
         Statement: [...LogRole, {
           Effect: 'Allow',
           Action: [
-            'dynamodb:Scan',
+            'dynamodb:Query',
           ],
           Resource: [
             'arn:aws:dynamodb:us-east-1:*:table/${self:provider.environment.COMMENTS_TABLE}',
+            'arn:aws:dynamodb:us-east-1:*:table/${self:provider.environment.COMMENTS_TABLE}/index/${self:provider.environment.COMMENTS_TABLE_INDEX}'
           ],
         }, {
           Effect: 'Allow',

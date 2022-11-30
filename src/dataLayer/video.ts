@@ -17,6 +17,7 @@ const VIDEOS_BUCKET = process.env.VIDEOS_BUCKET;
 const VIDEO_SIGNED_URL_EXPIRATION = process.env.VIDEO_SIGNED_URL_EXPIRATION;
 const THUMBNAILS_BUCKET = process.env.THUMBNAILS_BUCKET;
 const THUMBNAIL_SIGNED_URL_EXPIRATION = process.env.THUMBNAIL_SIGNED_URL_EXPIRATION;
+const VIDEOS_TABLE_INDEX = process.env.VIDEOS_TABLE_INDEX;
 
 export const createVideo = async (userId: string, title: string, description: string) => {
   const createdAt = new Date().toISOString();
@@ -89,6 +90,37 @@ export const getVideos = async (title: string, limit: number, nextKey: any) => {
       ':searchTitle': title.toLowerCase(),
     },
     ProjectionExpression: 'id, userId, title, totalViews, likes, dislikes',
+  }).promise();
+
+  const videos = result.Items.map((video: Video) => {
+    return {
+      id: video.id,
+      userId: video.userId,
+      title: video.title,
+      totalViews: video.totalViews,
+      likes: video.likes.length,
+      dislikes: video.dislikes.length,
+    } as ShortFormVideo;
+  });
+
+  return {
+    videos,
+    nextKey: result.LastEvaluatedKey ? encodeURIComponent(JSON.stringify(result.LastEvaluatedKey)) : null,
+  };
+};
+
+export const getVideosByUserId = async  (userId: string, limit: number, nextKey: any) => {
+  const result = await docClient.query({
+    TableName: VIDEOS_TABLE,
+    IndexName: VIDEOS_TABLE_INDEX,
+    KeyConditionExpression: 'userId = :userId',
+    ExpressionAttributeValues: {
+      ':userId': userId,
+    },
+    ProjectionExpression: 'id, userId, title, totalViews, likes, dislikes',
+    ScanIndexForward: false,
+    Limit: limit,
+    ExclusiveStartKey: nextKey,
   }).promise();
 
   const videos = result.Items.map((video: Video) => {
