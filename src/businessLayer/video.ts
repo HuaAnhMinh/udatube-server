@@ -135,16 +135,16 @@ export const getVideos = async (query: { userId?: string, title?: string, limit?
     }
   }
 
+  const title = query.title || '';
   let result;
   if (query.userId) {
     const user = await getProfile(query.userId);
     if (!user) {
       throw new Error(GetVideosError.FOUND_NO_USER);
     }
-    result = await fetchVideosByUserId(query.userId, limit, nextKey);
+    result = await fetchVideosByUserId(query.userId, title, limit, nextKey);
   }
   else {
-    const title = query.title || '';
     result = await fetchVideos(title, limit, nextKey);
   }
 

@@ -109,13 +109,15 @@ export const getVideos = async (title: string, limit: number, nextKey: any) => {
   };
 };
 
-export const getVideosByUserId = async  (userId: string, limit: number, nextKey: any) => {
+export const getVideosByUserId = async  (userId: string, title: string, limit: number, nextKey: any) => {
   const result = await docClient.query({
     TableName: VIDEOS_TABLE,
     IndexName: VIDEOS_TABLE_INDEX,
     KeyConditionExpression: 'userId = :userId',
+    FilterExpression: 'contains(searchTitle, :searchTitle)',
     ExpressionAttributeValues: {
       ':userId': userId,
+      ':searchTitle': title.toLowerCase()
     },
     ProjectionExpression: 'id, userId, title, totalViews, likes, dislikes',
     ScanIndexForward: false,
