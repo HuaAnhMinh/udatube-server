@@ -3,8 +3,8 @@ import schema from "@functions/CreateVideo/schema";
 import {middyfy} from "@libs/lambda";
 import {getUserId} from "@functions/Authorizer/utils";
 import {createVideo} from "../../businessLayer/video";
-import CreateVideoErrors from "../../errors/CreateVideoErrors";
 import cors from "@middy/http-cors";
+import {errorResponse} from "../../errors/Errors";
 
 const CreateVideo: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async (event) => {
   try {
@@ -21,23 +21,7 @@ const CreateVideo: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async (ev
   catch (e) {
     console.log(e);
 
-    switch (e.message) {
-      case CreateVideoErrors.INVALID_TITLE:
-      case CreateVideoErrors.USER_NOT_EXIST:
-        return {
-          statusCode: 400,
-          body: JSON.stringify({
-            message: e.message,
-          }),
-        };
-      default:
-        return {
-          statusCode: 500,
-          body: JSON.stringify({
-            message: 'Internal server error',
-          }),
-        };
-    }
+    return errorResponse(e);
   }
 };
 

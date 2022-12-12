@@ -1,6 +1,6 @@
 import {
   changeUsername,
-  createUser as addUserToDB,
+  createUser as _createUser,
   generatePresignedUrlForAvatar,
   getSubscribedChannels as _getSubscribedChannels,
   getUserById,
@@ -9,36 +9,80 @@ import {
   subscribeToUser,
   unsubscribeFromUser,
 } from "../dataLayer/user";
-import RegisterErrors from "../errors/RegisterErrors";
-import SubscribeChannelErrors from "../errors/SubscribeChannelErrors";
-import UnsubscribeChannelErrors from "../errors/UnsubscribeChannelErrors";
-import ChangeUsernameErrors from "../errors/ChangeUsernameErrors";
-import SearchUsersErrors from "../errors/SearchUsersErrors";
 import {resizeImage} from "@libs/image";
+import Errors, {ErrorFormat} from "../errors/Errors";
+import {User} from "../models/user";
 
-export const getProfile = async (id: string) => {
-  return await getUserById(id);
-};
-
-export const createUser = async (id: string) => {
-  const user = await getProfile(id);
-  if (user) {
-    throw new Error(RegisterErrors.USER_ALREADY_EXISTS);
+/**
+ * @param {string} id The id of user to get
+ *
+ * @returns {User} User with passed id
+ *
+ * @throws {Errors.UserNotFound}
+ * */
+export const getProfile = async (id: string): Promise<User> => {
+  let user: User;
+  try {
+    user = await getUserById(id);
   }
-  return await addUserToDB(id);
+  catch (e) {
+    console.log(`ERROR/BusinessLayer/user.ts/getProfile Error when get profile of user with id ${id}. Error: ${e.messages}`);
+    throw Errors.UnknownError(e.message);
+  }
+
+  if (!user) {
+    console.log(`INFO/BusinessLayer/user.ts/createUser User with id ${id} cannot be found`);
+    throw Errors.UserNotFound;
+  }
+  return user;
 };
 
+/**
+ * 
+ * @param {string} id The id of user to create
+ * @returns {User} created user
+ * @throws {Errors.UserNotFound, Errors.UnknownError}
+ */
+export const createUser = async (id: string): Promise<User> => {
+  try {
+    await getProfile(id);
+  }
+  catch (e) {
+    const error = e as ErrorFormat;
+    if (error.statusCode === 404) {
+      try {
+        return await _createUser(id);
+      }
+      catch (e) {
+        console.log(`ERROR/BusinessLayer/user.ts/createUser Error when create user with id ${id}. Error: ${e.message}`);
+        throw Errors.UnknownError(e.message);
+      }
+    }
+    throw Errors.UnknownError(e.message);
+  }
+
+  console.log(`INFO/BusinessLayer/user.ts/createUser User with id ${id} has been already existed`);
+  throw Errors.UserAlreadyExists;
+};
+
+/**
+ * @param {{string, string, string}} query the query details to get data, including: username (string), limit (string), nextKey (string)
+ * @returns {ShortFormUser[], string | null} users and nextKey for next batch users
+ * @throws {Errors.LimitMustBeNumber, Errors.LimitMustBeGreaterThan0, Errors.InvalidNextKey, Errors.UnknownError}
+ * */
 export const searchUsers = async (query: { username?: string, limit?: string, nextKey?: string }) => {
   const username = query.username || '';
   let limit = query.limit || 10;
   if (typeof limit === 'string') {
     limit = parseInt(limit);
     if (isNaN(limit)) {
-      throw new Error(SearchUsersErrors.LIMIT_MUST_BE_NUMBER);
+      console.log(`INFO/BusinessLayer/user.ts/searchUsers The limit parameter must be number. Current value: ${limit}`);
+      throw Errors.LimitMustBeNumber;
     }
 
     if (limit <= 0) {
-      throw new Error(SearchUsersErrors.LIMIT_MUST_BE_GREATER_THAN_0);
+      console.log(`INFO/BusinessLayer/user.ts/searchUsers The limit parameter must be smaller than 0. Current value: ${limit}`);
+      throw Errors.LimitMustBeGreaterThan0;
     }
   }
 
@@ -48,98 +92,164 @@ export const searchUsers = async (query: { username?: string, limit?: string, ne
     console.log('uriDecoded', uriDecoded);
     try {
       nextKey = JSON.parse(uriDecoded);
-      console.log('nextKey', nextKey);
     }
     catch (e) {
-      console.log(e);
-      throw new Error(SearchUsersErrors.NEXT_KEY_INVALID);
+      console.log(`ERROR/BusinessLayer/user.ts/searchUsers Invalid next key. Current value: ${nextKey}. Error: ${e.message}`);
+      throw Errors.InvalidNextKey;
     }
 
     if (!(nextKey as any).id) {
-      throw new Error(SearchUsersErrors.NEXT_KEY_INVALID);
+      console.log(`ERROR/BusinessLayer/user.ts/searchUsers Invalid next key. Current value: ${nextKey}.`);
+      throw Errors.InvalidNextKey;
     }
   }
 
-  return await getUsersByUsername(username, limit, nextKey);
+  try {
+    const result = await getUsersByUsername(username, limit, nextKey);
+    console.log(`INFO/BusinessLayer/user.ts/searchUsers Users have username that contains ${query.username} have been retrieved`);
+    return result;
+  }
+  catch (e) {
+    console.log(`ERROR/BusinessLayer/user.ts/searchUsers Unknown error when retrieve user that contains ${query.username}. Error: ${e.message}`);
+    throw Errors.UnknownError(e.message);
+  }
 };
 
+/**
+ * @param {string} userId id of user that is subscribing
+ * @param {string} channelId id of user that is going to be subscribed
+ * @throws {Errors.CannotSubscribeSameId, Errors.UserNotFound, Errors.UnknownError}
+ * */
 export const subscribeToChannel = async (userId: string, channelId: string) => {
   if (userId === channelId) {
-    throw new Error(SubscribeChannelErrors.CANNOT_SUBSCRIBE_SAME_ID);
+    throw Errors.CannotSubscribeSameId;
   }
 
   const user = await getProfile(userId);
-
-  if (!user) {
-    throw new Error(SubscribeChannelErrors.USER_NOT_FOUND);
-  }
-
   const targetUser = await getProfile(channelId);
 
-  if (!targetUser) {
-    throw new Error(SubscribeChannelErrors.TARGET_NOT_FOUND);
-  }
-
-  if (user.subscribedChannels.includes(channelId)) {
+  if (user.subscribedChannels.includes(targetUser.id)) {
+    console.log(`INFO/BusinessLayer/user.ts/subscribeToChannel User with id ${userId} has already subscribed to target user with id ${channelId}`);
     return;
   }
 
-  return await subscribeToUser(userId, channelId);
+  try {
+    await subscribeToUser(userId, channelId);
+    console.log(`INFO/BusinessLayer/user.ts/subscribeToChannel User with id ${userId} has subscribed to user with id ${channelId} successfully`);
+  }
+  catch (e) {
+    console.log(`ERROR/BusinessLayer/user.ts/subscribeToChannel Unknown error when user with id ${userId} is subscribing user with id ${channelId}. Error: ${e.message}`);
+    throw Errors.UnknownError(e.message);
+  }
 };
 
+/**
+ * @param {string} userId id of user that is unsubscribing
+ * @param {string} channelId id of user that is going to be unsubscribed
+ * @throws {Errors.CannotUnsubscribeSameId, Errors.UserNotFound, Errors.UnknownError}
+ * */
 export const unsubscribeFromChannel = async (userId: string, channelId: string) => {
   if (userId === channelId) {
-    throw new Error(UnsubscribeChannelErrors.CANNOT_UNSUBSCRIBE_SAME_ID);
+    throw Errors.CannotUnsubscribeSameId;
   }
 
   const user = await getProfile(userId);
-
-  if (!user) {
-    throw new Error(UnsubscribeChannelErrors.USER_NOT_FOUND);
-  }
-
   const targetUser = await getProfile(channelId);
 
-  if (!targetUser) {
-    throw new Error(UnsubscribeChannelErrors.TARGET_NOT_FOUND);
-  }
-
-  if (!user.subscribedChannels.includes(channelId)) {
+  if (!user.subscribedChannels.includes(targetUser.id)) {
+    console.log(`INFO/BusinessLayer/user.ts/unsubscribeFromChannel User with id ${userId} has already unsubscribed to target user with id ${channelId}`);
     return;
   }
 
-  return await unsubscribeFromUser(userId, channelId);
+  try {
+    await unsubscribeFromUser(userId, channelId);
+    console.log(`INFO/BusinessLayer/user.ts/unsubscribeToChannel User with id ${userId} has unsubscribed to user with id ${channelId} successfully`);
+  }
+  catch (e) {
+    console.log(`ERROR/BusinessLayer/user.ts/unsubscribeToChannel Unknown error when user with id ${userId} is unsubscribing user with id ${channelId}. Error: ${e.message}`);
+    throw Errors.UnknownError(e.message);
+  }
 };
 
+/**
+ * @param {string} userId id of user that is changing username
+ * @param {string} newUsername new username
+ * @throws {Errors.UserNotFound, Errors.InvalidUsername, Errors.UnknownError}
+ * */
 export const editUsername = async (userId: string, newUsername: string) => {
   const user = await getProfile(userId);
-  if (!user) {
-    throw new Error(ChangeUsernameErrors.USER_NOT_FOUND);
-  }
 
   if (!newUsername.trim()) {
-    throw new Error(ChangeUsernameErrors.INVALID_USERNAME);
+    console.log(`INFO/BusinessLayer/user.ts/editUsername Invalid username. Current value: '${newUsername}'`);
+    throw Errors.InvalidUsername;
   }
 
   if (user.username === newUsername) {
+    console.log(`INFO/BusinessLayer/user.ts/editUsername User with id ${userId} is changing new username with the same old username.`);
     return;
   }
 
-  await changeUsername(userId, newUsername.trim());
+  try {
+    await changeUsername(userId, newUsername.trim());
+    console.log(`INFO/BusinessLayer/user.ts/editUsername User with id ${userId} has renamed successfully`);
+  }
+  catch (e) {
+    console.log(`ERROR/BusinessLayer/user.ts/editUsername Unknown error when changing username of user with id ${userId}. Error: ${e.message}`);
+    throw Errors.UnknownError(e.message);
+  }
 };
 
+/**
+ * @param {string} userId id of user that is changing avatar
+ * @returns {string} presigned url to change avatar
+ * @throws {Errors.UserNotFound, Errors.UnknownError}
+ * */
 export const changeAvatar = async (userId: string) => {
-  return await generatePresignedUrlForAvatar(userId);
+  await getProfile(userId);
+
+  try {
+    const url = await generatePresignedUrlForAvatar(userId);
+    console.log(`INFO/BusinessLayer/user.ts/changeAvatar Presigned URL to change avatar for user with id ${userId} has been generated`);
+    return url;
+  }
+  catch (e) {
+    console.log(`ERROR/BusinessLayer/user.ts/changeAvatar Unknown error when generating presigned URL to change avatar for user with id: ${userId}. Error: ${e.message}`)
+    throw Errors.UnknownError(e.message);
+  }
 }
 
+/**
+ * @param {string} userId id of user that is fetching list subscribed users
+ * @returns {ShortFormUser[]} list subscribed users
+ * @throws {Errors.UserNotFound, Errors.UnknownError}
+ * */
 export const getSubscribedChannels = async (userId: string) => {
-  return await _getSubscribedChannels(userId);
+  await getProfile(userId);
+
+  try {
+    const users = await _getSubscribedChannels(userId);
+    console.log(`INFO/BusinessLayer/user.ts/getSubscribedChannels list subscribed users of user with id ${userId} has been fetched`);
+    return users;
+  }
+  catch (e) {
+    console.log(`ERROR/BusinessLayer/user.ts/getSubscribedChannels Unknown error when fetching list subscribed users for user with id ${userId}. Error: ${e.message}`);
+    throw Errors.UnknownError(e.message);
+  }
 };
 
+/**
+ * @param {string} key avatar's key in S3 bucket
+ * @throws {Errors.InvalidImage, Errors.UnknownError}
+ * */
 export const resizeAvatar = async (key: string) => {
   const buffer = await resizeImage(`https://udatube-avatars-dev.s3.amazonaws.com/${key}`, 500, 500);
   if (!buffer) {
-    return;
+    throw Errors.InvalidImage;
   }
-  return await resizeAvatarToS3(buffer, key);
+  try {
+    await resizeAvatarToS3(buffer, key);
+  }
+  catch (e) {
+    throw Errors.UnknownError(e.message);
+  }
 };

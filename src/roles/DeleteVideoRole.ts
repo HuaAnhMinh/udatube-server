@@ -54,6 +54,15 @@ export default {
           Resource: [
             'arn:aws:dynamodb:us-east-1:*:table/${self:provider.environment.COMMENTS_TABLE}',
           ],
+        }, {
+          Effect: 'Allow',
+          Action: [
+            'dynamodb:Query',
+          ],
+          Resource: [
+            'arn:aws:dynamodb:us-east-1:*:table/${self:provider.environment.COMMENTS_TABLE}',
+            'arn:aws:dynamodb:us-east-1:*:table/${self:provider.environment.COMMENTS_TABLE}/index/${self:provider.environment.COMMENTS_TABLE_INDEX}'
+          ],
         }],
       },
     }],

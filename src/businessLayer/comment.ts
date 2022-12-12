@@ -3,39 +3,39 @@ import {findVideoById} from "./video";
 import {
   createComment as _createComment,
   deleteComment as _deleteComment,
-  findCommentById,
-  findCommentsByVideoIdWithPagination as findComments,
+  findCommentById as _findCommentById,
+  findCommentsByVideoId as findComments,
   updateComment as _updateComment,
 } from '../dataLayer/comment';
 import CreateCommentErrors from "../errors/CreateCommentErrors";
 import GetCommentsErrors from "../errors/GetCommentsErrors";
 import DeleteCommentErrors from "../errors/DeleteCommentErrors";
 import UpdateCommentErrors from "../errors/UpdateCommentErrors";
+import FindCommentErrors from "../errors/FindCommentErrors";
+
+export const findCommentById = async (commentId: string) => {
+  const comment = await _findCommentById(commentId);
+  if (!comment) {
+    throw new Error(FindCommentErrors.FOUND_NO_COMMENT);
+  }
+  return comment;
+};
 
 export const createComment = async (userId: string, videoId: string, content: string) => {
   const user = await getProfile(userId);
-  if (!user) {
-    throw new Error(CreateCommentErrors.FOUND_NO_USER);
-  }
 
   const video = await findVideoById(videoId);
-  if (!video) {
-    throw new Error(CreateCommentErrors.FOUND_NO_VIDEO);
-  }
 
   if (!content.trim()) {
     throw new Error(CreateCommentErrors.CONTENT_IS_EMPTY);
   }
 
-  return await _createComment(userId, videoId, content.trim());
+  return await _createComment(user.id, video.id, content.trim());
 };
 
 export const getComments = async (query: { videoId?: string; limit?: string; nextKey?: string }) => {
   const videoId = query.videoId;
   const video = await findVideoById(videoId);
-  if (!video) {
-    throw new Error(GetCommentsErrors.FOUND_NO_VIDEO);
-  }
 
   let limit = query.limit || 10;
   if (typeof limit === 'string') {
@@ -66,7 +66,7 @@ export const getComments = async (query: { videoId?: string; limit?: string; nex
     }
   }
 
-  const result = await findComments(videoId, limit, nextKey);
+  const result = await findComments(video.id, limit, nextKey);
   for (const comment of result.comments) {
     comment.username = (await getProfile(comment.userId)).username;
   }
@@ -75,16 +75,13 @@ export const getComments = async (query: { videoId?: string; limit?: string; nex
 
 export const deleteComment = async (id: string, userId: string) => {
   const user = await getProfile(userId);
-  if (!user) {
-    throw new Error(DeleteCommentErrors.FOUND_NO_USER);
-  }
 
   const comment = await findCommentById(id);
   if (!comment) {
     throw new Error(DeleteCommentErrors.FOUND_NO_COMMENT);
   }
 
-  if (comment.userId !== userId) {
+  if (comment.userId !== user.id) {
     throw new Error(DeleteCommentErrors.INVALID_PERMISSION);
   }
 

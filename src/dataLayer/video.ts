@@ -1,12 +1,15 @@
 import {createHash} from 'crypto';
 import * as AWS from 'aws-sdk';
+import { DocumentClient } from 'aws-sdk/clients/dynamodb'
+import * as AWSXRay from 'aws-xray-sdk'
 import {v4} from 'uuid';
 import {ShortFormVideo, Video} from "../models/video";
 import {getUserById} from "./user";
 import {findCommentsByVideoId} from "./comment";
 
-const docClient = new AWS.DynamoDB.DocumentClient();
-const s3 = new AWS.S3({
+const XAWS = AWSXRay.captureAWS(AWS);
+const docClient: DocumentClient = new XAWS.DynamoDB.DocumentClient();
+const s3 = new XAWS.S3({
   signatureVersion: 'v4'
 });
 
@@ -39,6 +42,8 @@ export const createVideo = async (userId: string, title: string, description: st
     Item: video,
   }).promise();
 
+  console.log(`INFO/DataLayer/video.ts/createVideo Video with id ${video.id} has been created by user with id ${userId}`);
+
   await docClient.update({
     TableName: USERS_TABLE,
     Key: {id: userId},
@@ -47,6 +52,8 @@ export const createVideo = async (userId: string, title: string, description: st
       ':videoId': [video.id],
     },
   }).promise();
+
+  console.log(`INFO/DataLayer/video.ts/createVideo Video with id ${video.id} has been added to list videos of user with id ${userId}`);
 
   return video;
 };
@@ -58,6 +65,8 @@ export const findVideoById = async (videoId: string): Promise<Video> => {
       id: videoId,
     },
   }).promise();
+
+  console.log(`INFO/DataLayer/video.ts/findVideoById Video with id ${videoId} has been retrieved`);
 
   return result.Item as Video;
 };
@@ -92,6 +101,8 @@ export const getVideos = async (title: string, limit: number, nextKey: any) => {
     ProjectionExpression: 'id, userId, title, totalViews, likes, dislikes',
   }).promise();
 
+  console.log(`INFO/DataLayer/video.ts/getVideos Videos contain title ${title} have been retrieved`);
+
   const videos = result.Items.map((video: Video) => {
     return {
       id: video.id,
@@ -102,6 +113,8 @@ export const getVideos = async (title: string, limit: number, nextKey: any) => {
       dislikes: video.dislikes.length,
     } as ShortFormVideo;
   });
+
+  console.log(`INFO/DataLayer/video.ts/getVideos Videos contain title ${title} have been converted to short form`);
 
   return {
     videos,
@@ -125,6 +138,8 @@ export const getVideosByUserId = async  (userId: string, title: string, limit: n
     ExclusiveStartKey: nextKey,
   }).promise();
 
+  console.log(`INFO/DataLayer/video.ts/getVideosByUserId Videos of user ${userId} contain title ${title} have been retrieved`);
+
   const videos = result.Items.map((video: Video) => {
     return {
       id: video.id,
@@ -135,6 +150,8 @@ export const getVideosByUserId = async  (userId: string, title: string, limit: n
       dislikes: video.dislikes.length,
     } as ShortFormVideo;
   });
+
+  console.log(`INFO/DataLayer/video.ts/getVideosByUserId Videos of user ${userId} contain title ${title} have been converted to short form`);
 
   return {
     videos,
@@ -153,6 +170,8 @@ export const deleteVideo = async (videoId: string) => {
     },
   }).promise();
 
+  console.log(`INFO/DataLayer/video.ts/deleteVideo Video with id ${videoId} has been removed`);
+
   const videoIndex = user.videos.indexOf(videoId);
 
   await docClient.update({
@@ -161,8 +180,10 @@ export const deleteVideo = async (videoId: string) => {
     UpdateExpression: `REMOVE videos[${videoIndex}]`,
   }).promise();
 
+  console.log(`INFO/DataLayer/video.ts/deleteVideo Video entry with id ${videoId} has been removed from list videos of user ${user.id}`);
+
   const comments = await findCommentsByVideoId(videoId);
-  for (const comment of comments) {
+  for (const comment of comments.comments) {
     try {
       await docClient.delete({
         TableName: COMMENTS_TABLE,
@@ -170,9 +191,11 @@ export const deleteVideo = async (videoId: string) => {
           id: comment.id,
         },
       }).promise();
+
+      console.log(`INFO/DataLayer/video.ts/deleteVideo Comment with id ${comment.id} of video with id ${videoId} has been removed`);
     }
     catch (e) {
-      console.log(e);
+      console.log(`ERROR/DataLayer/video.ts/deleteVideo Comment with id ${comment.id} of video with id ${videoId} cannot be removed with error: ${e}`);
     }
   }
 
@@ -181,9 +204,11 @@ export const deleteVideo = async (videoId: string) => {
       Bucket: VIDEOS_BUCKET,
       Key: `${videoId}.mp4`,
     }).promise();
+
+    console.log(`INFO/DataLayer/video.ts/deleteVideo Video MP4 file of video with id ${videoId} has been removed from S3`);
   }
   catch (e) {
-    console.log(e);
+    console.log(`ERROR/DataLayer/video.ts/deleteVideo Video MP4 file of video with id ${videoId} cannot be removed with error: ${e}`);
   }
 
   try {
@@ -191,9 +216,11 @@ export const deleteVideo = async (videoId: string) => {
       Bucket: THUMBNAILS_BUCKET,
       Key: `${videoId}.png`,
     }).promise();
+
+    console.log(`INFO/DataLayer/video.ts/deleteVideo Thumbnail PNG file of video with id ${videoId} has been removed from S3`);
   }
   catch (e) {
-    console.log(e);
+    console.log(`ERROR/DataLayer/video.ts/deleteVideo Thumbnail PNG file of video with id ${videoId} cannot be removed with error: ${e}`);
   }
 };
 
@@ -226,6 +253,8 @@ export const updateVideo = async (videoId: string, updated: {
       UpdateExpression: updateExpression,
       ExpressionAttributeValues: expressionAttributeValues,
     }).promise();
+
+    console.log(`INFO/DataLayer/video.ts/updateVideo Video with id ${videoId} has been updated with UpdateExpression: ${updateExpression} and ExpressionAttributeValues: ${expressionAttributeValues}`);
   }
 
   if (updated.content) {
@@ -237,6 +266,8 @@ export const updateVideo = async (videoId: string, updated: {
         ':updatedAt': new Date().toISOString(),
       },
     }).promise();
+
+    console.log(`INFO/DataLayer/video.ts/updateVideo Last updated time of video with id ${videoId} has been updated`);
   }
 };
 
@@ -249,6 +280,8 @@ export const increaseVideoViews = async (videoId: string) => {
       ':totalViews': 1,
     },
   }).promise();
+
+  console.log(`INFO/DataLayer/video.ts/increaseVideoViews Total views of video with id ${videoId} has been increased`);
 };
 
 export const reactVideo = async (videoId: string, userId: string, likeOrDislike: 'likes' | 'dislikes') => {
@@ -266,6 +299,8 @@ export const reactVideo = async (videoId: string, userId: string, likeOrDislike:
       Key: {id: videoId},
       UpdateExpression: 'REMOVE ' + oppositeReaction + '[' + index + ']',
     }).promise();
+
+    console.log(`INFO/DataLayer/video.ts/reactVideo Reaction ${oppositeReaction} of video with id ${videoId} has removed user with id ${userId}`);
   }
 
   await docClient.update({
@@ -276,6 +311,8 @@ export const reactVideo = async (videoId: string, userId: string, likeOrDislike:
       ':userId': [userId],
     },
   }).promise();
+
+  console.log(`INFO/DataLayer/video.ts/reactVideo Reaction ${likeOrDislike} of video with id ${videoId} has added user with id ${userId}`);
 };
 
 export const unreactVideo = async (videoId: string, userId: string, likeOrDislike: 'likes' | 'dislikes') => {
@@ -291,6 +328,8 @@ export const unreactVideo = async (videoId: string, userId: string, likeOrDislik
     Key: {id: videoId},
     UpdateExpression: 'REMOVE ' + likeOrDislike + '[' + index + ']',
   }).promise();
+
+  console.log(`INFO/DataLayer/video.ts/unreactVideo Reaction ${likeOrDislike} of video with id ${videoId} has removed user with id ${userId}`);
 };
 
 export const resizeThumbnailToS3 = async (image: Buffer, key: string) => {

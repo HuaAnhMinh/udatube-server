@@ -75,6 +75,22 @@ const serverlessConfiguration: AWS = {
       restApi: true,
     },
     stage: '${opt:stage, "dev"}',
+    tracing: {
+      lambda: true,
+      apiGateway: true,
+    },
+    iam: {
+      role: {
+        statements: [{
+          Effect: 'Allow',
+          Action: [
+            'xray:PutTelemetryRecords',
+            'xray:PutTraceSegments',
+          ],
+          Resource: "*"
+        }]
+      }
+    },
     environment: {
       AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1',
       NODE_OPTIONS: '--enable-source-maps --stack-trace-limit=1000',

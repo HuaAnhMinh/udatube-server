@@ -2,8 +2,8 @@ import {APIGatewayProxyEvent, APIGatewayProxyResult, Handler} from "aws-lambda";
 import {middyfy} from "@libs/lambda";
 import {getUserId} from "@functions/Authorizer/utils";
 import {unsubscribeFromChannel} from "../../businessLayer/user";
-import UnsubscribeChannelErrors from "../../errors/UnsubscribeChannelErrors";
 import cors from "@middy/http-cors";
+import {errorResponse} from "../../errors/Errors";
 
 const UnsubscribeChannel: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
   const userId = getUserId(event);
@@ -21,30 +21,7 @@ const UnsubscribeChannel: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> =
   }
   catch (e) {
     console.log(e);
-    switch (e.message) {
-      case UnsubscribeChannelErrors.CANNOT_UNSUBSCRIBE_SAME_ID:
-        return {
-          statusCode: 400,
-          body: JSON.stringify({
-            message: e.message,
-          }),
-        };
-      case UnsubscribeChannelErrors.USER_NOT_FOUND:
-      case UnsubscribeChannelErrors.TARGET_NOT_FOUND:
-        return {
-          statusCode: 404,
-          body: JSON.stringify({
-            message: e.message,
-          }),
-        };
-      default:
-        return {
-          statusCode: 500,
-          body: JSON.stringify({
-            message: 'Internal Server Error',
-          }),
-        };
-    }
+    return errorResponse(e);
   }
 };
 

@@ -3,6 +3,7 @@ import {middyfy} from "@libs/lambda";
 import {getUserId} from "@functions/Authorizer/utils";
 import {changeAvatar} from "../../businessLayer/user";
 import cors from "@middy/http-cors";
+import {errorResponse} from "../../errors/Errors";
 
 const ChangeAvatar: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
   try {
@@ -17,12 +18,7 @@ const ChangeAvatar: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async
   }
   catch (e) {
     console.log(e);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({
-        message: 'Internal Server Error',
-      }),
-    };
+    return errorResponse(e);
   }
 };
 

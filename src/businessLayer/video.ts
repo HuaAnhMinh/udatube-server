@@ -13,7 +13,6 @@ import {
   unreactVideo as _unreactVideo,
   updateVideo as _updateVideo,
 } from '../dataLayer/video';
-import CreateVideoErrors from "../errors/CreateVideoErrors";
 import UploadVideoErrors from "../errors/UploadVideoErrors";
 import UploadThumbnailErrors from "../errors/UploadThumbnailErrors";
 import GetVideosError from "../errors/GetVideosErrors";
@@ -23,48 +22,60 @@ import UpdateVideoErrors from "../errors/UpdateVideoErrors";
 import ReactVideoErrors from "../errors/ReactVideoErrors";
 import {resizeImage} from "@libs/image";
 import * as console from "console";
+import Errors from "../errors/Errors";
+import {Video} from "../models/video";
 
-export const createVideo = async (userId: string, title: string, description: string) => {
+/**
+ * @param {string} userId id of user that is creating video
+ * @param {string} title Video title
+ * @param {string} description Video description
+ * @returns {Video} Created video
+ * @throws {Errors.UserNotFound, Errors.InvalidTitle, Errors.UnknownError}
+ * */
+export const createVideo = async (userId: string, title: string, description: string): Promise<Video> => {
   const user = await getProfile(userId);
-  if (!user) {
-    throw new Error(CreateVideoErrors.USER_NOT_EXIST);
-  }
 
   if (!title.trim()) {
-    throw new Error(CreateVideoErrors.INVALID_TITLE);
+    console.log(`INFO/BusinessLayer/video.ts/createVideo Title cannot be empty. Requested by user with id ${userId}`);
+    throw Errors.InvalidTitle;
   }
 
-  return await addVideo(userId, title.trim(), description.trim());
+  try {
+    const video = await addVideo(user.id, title.trim(), description.trim());
+    console.log(`INFO/BusinessLayer/video.ts/createVideo Video with id ${video.id} has been created by user with id ${user.id}`);
+    return video;
+  }
+  catch (e) {
+    console.log(`ERROR/BusinessLayer/video.ts/createVideo Unknown error when creating video by user with id ${user.id}. Error: ${e.message}`);
+    throw Errors.UnknownError(e.message);
+  }
 };
 
-export const findVideoById = async (videoId: string, increaseView?: boolean) => {
+export const findVideoById = async (videoId: string, increaseView?: boolean, userId?: string) => {
+  const video = await findVideo(videoId);
+  if (!video) {
+    console.log(`INFO/BusinessLayer/video.ts/findVideoById Video with id ${videoId} cannot be found`);
+    throw Errors.VideoNotFound;
+  }
+
   try {
     if (increaseView) {
       await increaseVideoViews(videoId);
     }
   }
   catch (e) {
-    console.log(e);
+    console.log(`ERROR/BusinessLayer/video.ts/findVideoById Error when increase total views for video with id ${videoId}. Error: ${e}`);
   }
-  const video = await findVideo(videoId);
+
+  if (userId) {
+    const user = await getProfile(userId);
+
+    if (user.videos.indexOf(videoId) === -1) {
+      throw Errors.VideoNotFound;
+    }
+  }
+
   video.username = (await getProfile(video.userId)).username;
-  return video;
-};
-
-export const findVideoByIdToUpdate = async (videoId: string, userId: string) => {
-  const user = await getProfile(userId);
-  if (!user) {
-    throw new Error(UpdateVideoErrors.FOUND_NO_USER);
-  }
-
-  if (user.videos.indexOf(videoId) === -1) {
-    throw new Error(UpdateVideoErrors.FOUND_NO_VIDEO);
-  }
-
-  const video = await findVideo(videoId);
-  if (!video) {
-    throw new Error(UpdateVideoErrors.FOUND_NO_VIDEO);
-  }
   return video;
 };
 
@@ -75,9 +86,6 @@ export const uploadVideo = async (videoId: string, userId: string) => {
   }
 
   const video = await findVideoById(videoId);
-  if (!video) {
-    throw new Error(UploadVideoErrors.VIDEO_NOT_FOUND);
-  }
 
   if (video.userId !== user.id) {
     throw new Error(UploadVideoErrors.INVALID_PERMISSION);
@@ -93,9 +101,6 @@ export const uploadThumbnail = async (videoId: string, userId: string) => {
   }
 
   const video = await findVideoById(videoId);
-  if (!video) {
-    throw new Error(UploadThumbnailErrors.VIDEO_NOT_FOUND);
-  }
 
   if (video.userId !== user.id) {
     throw new Error(UploadThumbnailErrors.INVALID_PERMISSION);

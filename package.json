@@ -13,6 +13,7 @@
     "@middy/core": "^2.5.3",
     "@middy/http-cors": "^3.6.2",
     "@middy/http-json-body-parser": "^2.5.3",
+    "aws-xray-sdk": "^3.4.0",
     "axios": "^0.27.2",
     "jimp": "^0.16.2",
     "jsonwebtoken": "^8.5.1",

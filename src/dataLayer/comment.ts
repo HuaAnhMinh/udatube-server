@@ -1,9 +1,12 @@
 import {createHash} from 'crypto';
 import * as AWS from "aws-sdk";
+import { DocumentClient } from 'aws-sdk/clients/dynamodb'
+import * as AWSXRay from 'aws-xray-sdk'
 import {v4} from "uuid";
 import {Comment} from "../models/comment";
 
-const docClient = new AWS.DynamoDB.DocumentClient();
+const XAWS = AWSXRay.captureAWS(AWS);
+const docClient: DocumentClient = new XAWS.DynamoDB.DocumentClient();
 
 const COMMENTS_TABLE = process.env.COMMENTS_TABLE;
 const COMMENTS_TABLE_INDEX = process.env.COMMENTS_TABLE_INDEX;
@@ -24,33 +27,33 @@ export const createComment = async (userId: string, videoId: string, content: st
     Item: newComment,
   }).promise();
 
+  console.log(`INFO/DataLayer/comment.ts/createComment New comment with id ${newComment.id} for video with id ${videoId} has been created`);
+
   return newComment;
 };
 
-export const findCommentsByVideoId = async (videoId: string): Promise<Comment[]> => {
-  const result = await docClient.scan({
-    TableName: COMMENTS_TABLE,
-    FilterExpression: 'videoId = :videoId',
-    ExpressionAttributeValues: {
-      ':videoId': videoId,
-    },
-  }).promise();
-
-  return result.Items as Comment[];
-};
-
-export const findCommentsByVideoIdWithPagination = async (videoId: string, limit: number, nextKey: any): Promise<{ comments: Comment[], nextKey: string | null }> => {
-  const result = await docClient.query({
+export const findCommentsByVideoId = async (videoId: string, limit?: number, nextKey?: any): Promise<{ comments: Comment[], nextKey: string | null }> => {
+  const query: DocumentClient.QueryInput = {
     TableName: COMMENTS_TABLE,
     IndexName: COMMENTS_TABLE_INDEX,
     KeyConditionExpression: 'videoId = :videoId',
-    Limit: limit,
-    ExclusiveStartKey: nextKey,
     ExpressionAttributeValues: {
       ':videoId': videoId,
     },
     ScanIndexForward: false,
-  }).promise();
+  };
+
+  if (limit) {
+    query.Limit = limit;
+  }
+
+  if (nextKey) {
+    query.ExclusiveStartKey = nextKey;
+  }
+
+  const result = await docClient.query(query).promise();
+
+  console.log(`INFO/DataLayer/comment.ts/findCommentsByVideoId Comments for video with id ${videoId} have been retrieved`);
 
   return {
     comments: result.Items as Comment[],
@@ -74,6 +77,8 @@ export const deleteComment = async (id: string) => {
       id,
     },
   }).promise();
+
+  console.log(`INFO/DataLayer/comment.ts/findCommentById Comment with id ${id} has been retrieved`);
 };
 
 export const updateComment = async (id: string, content: string) => {
@@ -88,4 +93,6 @@ export const updateComment = async (id: string, content: string) => {
       ':updatedAt': new Date().toISOString(),
     },
   }).promise();
+
+  console.log(`INFO/DataLayer/comment.ts/findCommentById Comment with id ${id} has been updated its content`);
 };

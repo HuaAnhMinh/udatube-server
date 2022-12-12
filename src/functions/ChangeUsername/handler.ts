@@ -4,8 +4,9 @@ import {formatJSONResponse, ValidatedEventAPIGatewayProxyEvent} from "@libs/api-
 import schema from "@functions/ChangeUsername/schema";
 import {APIGatewayProxyEvent} from "aws-lambda";
 import {editUsername} from "../../businessLayer/user";
-import ChangeUsernameErrors from "../../errors/ChangeUsernameErrors";
 import cors from "@middy/http-cors";
+import * as console from "console";
+import {errorResponse} from "../../errors/Errors";
 
 const ChangeUsername: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async (event) => {
   const userId = getUserId(event as unknown as APIGatewayProxyEvent);
@@ -19,31 +20,7 @@ const ChangeUsername: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async 
   }
   catch (e) {
     console.log(e);
-
-    if (e.message === ChangeUsernameErrors.USER_NOT_FOUND) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({
-          message: e.message,
-        }),
-      };
-    }
-
-    if (e.message === ChangeUsernameErrors.INVALID_USERNAME) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({
-          message: e.message,
-        }),
-      };
-    }
-
-    return {
-      statusCode: 500,
-      body: JSON.stringify({
-        message: 'Internal server error',
-      }),
-    };
+    return errorResponse(e);
   }
 };
 
