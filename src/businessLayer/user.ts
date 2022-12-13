@@ -16,7 +16,7 @@ import {ShortFormUser, User} from "../models/user";
 /**
  * @param {string} id The id of user to get
  * @returns {Promise<User>} User with passed id
- * @throws {Errors.UserNotFound}
+ * @throws {Errors.UserNotFound, Errors.UnknownError}
  * */
 export const getProfile = async (id: string): Promise<User> => {
   let user: User;
@@ -64,7 +64,9 @@ export const createUser = async (id: string): Promise<User> => {
 };
 
 /**
- * @param {{string, string, string}} query the query details to get data, including: username (string), limit (string), nextKey (string)
+ * @param {string} query.username? Username that is contained in users username
+ * @param {string} query.limit? Limit number of users for each batch
+ * @param {string} query.nextKey? Key for next batch of users
  * @returns {Promise<{ users: ShortFormUser[], nextKey: string | null }} users and nextKey for next batch users
  * @throws {Errors.LimitMustBeNumber, Errors.LimitMustBeGreaterThan0, Errors.InvalidNextKey, Errors.UnknownError}
  * */
@@ -75,12 +77,12 @@ export const searchUsers = async (query: { username?: string, limit?: string, ne
   if (typeof limit === 'string') {
     limit = parseInt(limit);
     if (isNaN(limit)) {
-      console.log(`INFO/BusinessLayer/user.ts/searchUsers The limit parameter must be number. Current value: ${limit}`);
+      console.log(`INFO/BusinessLayer/user.ts/searchUsers The limit parameter must be number. Current value: ${query.limit}`);
       throw Errors.LimitMustBeNumber;
     }
 
     if (limit <= 0) {
-      console.log(`INFO/BusinessLayer/user.ts/searchUsers The limit parameter must be smaller than 0. Current value: ${limit}`);
+      console.log(`INFO/BusinessLayer/user.ts/searchUsers The limit parameter must be smaller than 0. Current value: ${query.limit}`);
       throw Errors.LimitMustBeGreaterThan0;
     }
   }

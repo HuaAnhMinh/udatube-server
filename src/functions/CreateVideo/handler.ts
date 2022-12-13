@@ -20,7 +20,6 @@ const CreateVideo: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async (ev
   }
   catch (e) {
     console.log(e);
-
     return errorResponse(e);
   }
 };

@@ -2,8 +2,8 @@ import {APIGatewayProxyEvent, APIGatewayProxyResult, Handler} from "aws-lambda";
 import {middyfy} from "@libs/lambda";
 import {getUserId} from "@functions/Authorizer/utils";
 import {unreactVideo} from "../../businessLayer/video";
-import ReactVideoErrors from "../../errors/ReactVideoErrors";
 import cors from "@middy/http-cors";
+import {errorResponse} from "../../errors/Errors";
 
 const UndislikeVideo: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
   try {
@@ -19,23 +19,7 @@ const UndislikeVideo: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
   }
   catch (e) {
     console.log(e);
-    switch (e.message) {
-      case ReactVideoErrors.FOUND_NO_VIDEO:
-      case ReactVideoErrors.FOUND_NO_USER:
-        return {
-          statusCode: 404,
-          body: JSON.stringify({
-            message: e.message
-          }),
-        };
-      default:
-        return {
-          statusCode: 500,
-          body: JSON.stringify({
-            message: 'Internal server error',
-          }),
-        };
-    }
+    return errorResponse(e);
   }
 };
 

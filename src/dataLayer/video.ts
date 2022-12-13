@@ -1,5 +1,7 @@
 import {createHash} from 'crypto';
 import * as AWS from 'aws-sdk';
+// @ts-ignore
+import {AWSError} from 'aws-sdk';
 import { DocumentClient } from 'aws-sdk/clients/dynamodb'
 import * as AWSXRay from 'aws-xray-sdk'
 import {v4} from 'uuid';
@@ -22,7 +24,14 @@ const THUMBNAILS_BUCKET = process.env.THUMBNAILS_BUCKET;
 const THUMBNAIL_SIGNED_URL_EXPIRATION = process.env.THUMBNAIL_SIGNED_URL_EXPIRATION;
 const VIDEOS_TABLE_INDEX = process.env.VIDEOS_TABLE_INDEX;
 
-export const createVideo = async (userId: string, title: string, description: string) => {
+/**
+ * @param {string} userId User who is creating video
+ * @param {string} title Video title
+ * @param {string} description Video description
+ * @returns {Promise<Video>} Created video
+ * @throws {AWSError}
+ * */
+export const createVideo = async (userId: string, title: string, description: string): Promise<Video> => {
   const createdAt = new Date().toISOString();
   const video: Video = {
     id: createHash('sha256').update(v4()).digest('hex'),
@@ -58,6 +67,11 @@ export const createVideo = async (userId: string, title: string, description: st
   return video;
 };
 
+/**
+ * @param {string} videoId Id of video to fetch
+ * @returns {Promise<Video>} Video to get
+ * @throws {AWSError}
+ * */
 export const findVideoById = async (videoId: string): Promise<Video> => {
   const result = await docClient.get({
     TableName: VIDEOS_TABLE,
@@ -71,7 +85,12 @@ export const findVideoById = async (videoId: string): Promise<Video> => {
   return result.Item as Video;
 };
 
-export const generatePresignedUrlUploadVideo = async (videoId: string) => {
+/**
+ * @param {string} videoId Id of video that is uploading video file
+ * @returns {string} presigned url to upload video file
+ * @throws {AWSError}
+ * */
+export const generatePresignedUrlUploadVideo = async (videoId: string): Promise<string> => {
   return await s3.getSignedUrlPromise('putObject', {
     Bucket: VIDEOS_BUCKET,
     Key: `${videoId}.mp4`,
@@ -80,6 +99,11 @@ export const generatePresignedUrlUploadVideo = async (videoId: string) => {
   });
 };
 
+/**
+ * @param {string} videoId Id of video that is uploading thumbnail file
+ * @returns {string} presigned url to upload thumbnail file
+ * @throws {AWSError}
+ * */
 export const generatePresignedUrlUploadThumbnail = async (videoId: string) => {
   return await s3.getSignedUrlPromise('putObject', {
     Bucket: THUMBNAILS_BUCKET,
@@ -89,7 +113,15 @@ export const generatePresignedUrlUploadThumbnail = async (videoId: string) => {
   });
 };
 
-export const getVideos = async (title: string, limit: number, nextKey: any) => {
+/**
+ * @param {string} title subtitle that is contained in video title
+ * @param {number} limit limit number of videos each batch
+ * @param {any} nextKey key to next batch of videos
+ * @returns {Promise<{videos: ShortFormVideo[], nextKey: string}>} list videos
+ * @throws {AWSError}
+ * */
+export const getVideos = async (title: string, limit: number, nextKey: any):
+  Promise<{videos: ShortFormVideo[], nextKey: string}> => {
   const result = await docClient.scan({
     TableName: VIDEOS_TABLE,
     Limit: limit,
@@ -122,7 +154,16 @@ export const getVideos = async (title: string, limit: number, nextKey: any) => {
   };
 };
 
-export const getVideosByUserId = async  (userId: string, title: string, limit: number, nextKey: any) => {
+/**
+ * @param {string} userId Id of user that videos belonging to
+ * @param {string} title subtitle that is contained in video title
+ * @param {number} limit limit number of videos each batch
+ * @param {any} nextKey key to next batch of videos
+ * @returns {Promise<{videos: ShortFormVideo[], nextKey: string}>} list videos
+ * @throws {AWSError}
+ * */
+export const getVideosByUserId = async  (userId: string, title: string, limit: number, nextKey: any):
+  Promise<{videos: ShortFormVideo[], nextKey: string}> => {
   const result = await docClient.query({
     TableName: VIDEOS_TABLE,
     IndexName: VIDEOS_TABLE_INDEX,
@@ -159,6 +200,10 @@ export const getVideosByUserId = async  (userId: string, title: string, limit: n
   };
 };
 
+/**
+ * @param {string} videoId Id of video to delete
+ * @throws {AWSError}
+ * */
 export const deleteVideo = async (videoId: string) => {
   const video = await findVideoById(videoId);
   const user = await getUserById(video.userId);
@@ -224,6 +269,11 @@ export const deleteVideo = async (videoId: string) => {
   }
 };
 
+/**
+ * @param {string} videoId id of video that is updating
+ * @param updated contain update part for video, including title, description, content
+ * @throws {AWSError}
+ * */
 export const updateVideo = async (videoId: string, updated: {
   title?: string;
   description?: string;
@@ -271,6 +321,10 @@ export const updateVideo = async (videoId: string, updated: {
   }
 };
 
+/**
+ * @param {string} videoId id of video that is increasing its views
+ * @throws {AWSError}
+ * */
 export const increaseVideoViews = async (videoId: string) => {
   await docClient.update({
     TableName: VIDEOS_TABLE,
@@ -284,6 +338,12 @@ export const increaseVideoViews = async (videoId: string) => {
   console.log(`INFO/DataLayer/video.ts/increaseVideoViews Total views of video with id ${videoId} has been increased`);
 };
 
+/**
+ * @param {string} videoId Id of video that is being reacted by viewer
+ * @param {string} userId Id of user who is reacting
+ * @param {'likes', 'dislikes'} likeOrDislike React type
+ * @throws {AWSError}
+ * */
 export const reactVideo = async (videoId: string, userId: string, likeOrDislike: 'likes' | 'dislikes') => {
   const video = await findVideoById(videoId);
   const oppositeReaction = likeOrDislike === 'likes' ? 'dislikes' : 'likes';
@@ -315,6 +375,12 @@ export const reactVideo = async (videoId: string, userId: string, likeOrDislike:
   console.log(`INFO/DataLayer/video.ts/reactVideo Reaction ${likeOrDislike} of video with id ${videoId} has added user with id ${userId}`);
 };
 
+/**
+ * @param {string} videoId Id of video that is being unreacted by viewer
+ * @param {string} userId Id of user who is unreacting
+ * @param {'likes', 'dislikes'} likeOrDislike Original type
+ * @throws {AWSError}
+ * */
 export const unreactVideo = async (videoId: string, userId: string, likeOrDislike: 'likes' | 'dislikes') => {
   const video = await findVideoById(videoId);
 
@@ -332,6 +398,11 @@ export const unreactVideo = async (videoId: string, userId: string, likeOrDislik
   console.log(`INFO/DataLayer/video.ts/unreactVideo Reaction ${likeOrDislike} of video with id ${videoId} has removed user with id ${userId}`);
 };
 
+/**
+ * @param {Uint8Array} image Thumbnail image buffer
+ * @param {string} key Thumbnail key in S3
+ * @throws {AWSError}
+ * */
 export const resizeThumbnailToS3 = async (image: Buffer, key: string) => {
   return await s3.putObject({
     Bucket: THUMBNAILS_BUCKET,

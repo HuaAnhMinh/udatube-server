@@ -2,7 +2,7 @@ import {APIGatewayProxyEvent, APIGatewayProxyResult, Handler} from "aws-lambda";
 import {middyfy} from "@libs/lambda";
 import {findVideoById} from "../../businessLayer/video";
 import cors from "@middy/http-cors";
-import GetVideoErrors from "../../errors/GetVideoErrors";
+import {errorResponse} from "../../errors/Errors";
 
 const GetVideo: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
   const videoId = event.pathParameters.id;
@@ -11,10 +11,10 @@ const GetVideo: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (ev
   try {
     let video;
     if (queryStringParameters && queryStringParameters.hasOwnProperty('userId') && queryStringParameters.userId !== '') {
-      video = findVideoById(videoId, false, queryStringParameters.userId);
+      video = await findVideoById(videoId, false, queryStringParameters.userId);
     }
     else {
-      video = findVideoById(videoId, true);
+      video = await findVideoById(videoId, true);
     }
 
     return {
@@ -25,23 +25,8 @@ const GetVideo: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (ev
     };
   }
   catch (e) {
-    switch (e.message) {
-      case GetVideoErrors.FOUND_NO_USER:
-      case GetVideoErrors.FOUND_NO_VIDEO:
-        return {
-          statusCode: 404,
-          body: JSON.stringify({
-            message: e.message,
-          }),
-        };
-      default:
-        return {
-          statusCode: 500,
-          body: JSON.stringify({
-            message: 'Internal Server Error',
-          }),
-        };
-    }
+    console.log(e);
+    return errorResponse(e);
   }
 };
 

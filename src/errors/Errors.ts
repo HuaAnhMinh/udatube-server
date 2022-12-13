@@ -64,4 +64,8 @@ export default {
     statusCode: 404,
     message: `Video not found`,
   } as ErrorFormat,
+  InvalidPermissionToEditVideo: {
+    statusCode: 403,
+    message: `You don't have the permission to modify this video`,
+  } as ErrorFormat,
 }

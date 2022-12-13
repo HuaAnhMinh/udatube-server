@@ -13,17 +13,10 @@ import {
   unreactVideo as _unreactVideo,
   updateVideo as _updateVideo,
 } from '../dataLayer/video';
-import UploadVideoErrors from "../errors/UploadVideoErrors";
-import UploadThumbnailErrors from "../errors/UploadThumbnailErrors";
-import GetVideosError from "../errors/GetVideosErrors";
-import DeleteVideoErrors from "../errors/DeleteVideoErrors";
-import SyncVideoUpdatedTimeErrors from "../errors/SyncVideoUpdatedTimeErrors";
-import UpdateVideoErrors from "../errors/UpdateVideoErrors";
-import ReactVideoErrors from "../errors/ReactVideoErrors";
 import {resizeImage} from "@libs/image";
 import * as console from "console";
 import Errors from "../errors/Errors";
-import {Video} from "../models/video";
+import {ShortFormVideo, Video} from "../models/video";
 
 /**
  * @param {string} userId id of user that is creating video
@@ -51,8 +44,22 @@ export const createVideo = async (userId: string, title: string, description: st
   }
 };
 
-export const findVideoById = async (videoId: string, increaseView?: boolean, userId?: string) => {
-  const video = await findVideo(videoId);
+/**
+ * @param {string} videoId Id of video to get
+ * @param {boolean} increaseView if true, increase total views of video
+ * @param {string} userId If exists, check if the video was created by user
+ * @returns {Promise<Video>} video to get
+ * @throws {Errors.VideoNotFound, Errors.UnknownError}
+ * */
+export const findVideoById = async (videoId: string, increaseView?: boolean, userId?: string): Promise<Video> => {
+  let video: Video;
+  try {
+    video = await findVideo(videoId);
+  }
+  catch (e) {
+    throw Errors.UnknownError(e.message);
+  }
+
   if (!video) {
     console.log(`INFO/BusinessLayer/video.ts/findVideoById Video with id ${videoId} cannot be found`);
     throw Errors.VideoNotFound;
@@ -69,7 +76,6 @@ export const findVideoById = async (videoId: string, increaseView?: boolean, use
 
   if (userId) {
     const user = await getProfile(userId);
-
     if (user.videos.indexOf(videoId) === -1) {
       throw Errors.VideoNotFound;
     }
@@ -79,46 +85,79 @@ export const findVideoById = async (videoId: string, increaseView?: boolean, use
   return video;
 };
 
-export const uploadVideo = async (videoId: string, userId: string) => {
+/**
+ * @param {string} videoId Id of video to generate presigned url to upload video file
+ * @param {string} userId Id of user who created the video
+ * @returns {string} presigned url to upload video file
+ * @throws {Errors.UserNotFound, Errors.VideoNotFound, Errors.InvalidPermissionToEditVideo, Errors.UnknownError}
+ * */
+export const uploadVideo = async (videoId: string, userId: string): Promise<string> => {
   const user = await getProfile(userId);
-  if (!user) {
-    throw new Error(UploadVideoErrors.USER_NOT_FOUND);
-  }
-
   const video = await findVideoById(videoId);
 
   if (video.userId !== user.id) {
-    throw new Error(UploadVideoErrors.INVALID_PERMISSION);
+    console.log(`INFO/BusinessLayer/video.ts/uploadVideo User with id ${userId} is not the owner of video with id ${videoId}`);
+    throw Errors.InvalidPermissionToEditVideo;
   }
 
-  return await generatePresignedUrlUploadVideo(videoId);
+  try {
+    const url = await generatePresignedUrlUploadVideo(videoId);
+    console.log(`INFO/BusinessLayer/video.ts/uploadVideo Presigned url to upload video file for video with id ${videoId} has been generated`);
+    return url;
+  }
+  catch (e) {
+    console.log(`ERROR/BusinessLayer/video.ts/uploadVideo Unknown error when generating presigned url to upload video file for video with id ${videoId}. Error: ${e.message}`);
+    throw Errors.UnknownError(e.message);
+  }
 };
 
-export const uploadThumbnail = async (videoId: string, userId: string) => {
+/**
+ * @param {string} videoId Id of video to generate presigned url to upload thumbnail file
+ * @param {string} userId Id of user who created the video
+ * @returns {string} presigned url to upload thumnail file
+ * @throws {Errors.UserNotFound, Errors.VideoNotFound, Errors.InvalidPermissionToEditVideo, Errors.UnknownError}
+ * */
+export const uploadThumbnail = async (videoId: string, userId: string): Promise<string> => {
   const user = await getProfile(userId);
-  if (!user) {
-    throw new Error(UploadThumbnailErrors.USER_NOT_FOUND);
-  }
-
   const video = await findVideoById(videoId);
 
   if (video.userId !== user.id) {
-    throw new Error(UploadThumbnailErrors.INVALID_PERMISSION);
+    console.log(`INFO/BusinessLayer/video.ts/uploadVideo User with id ${userId} is not the owner of video with id ${videoId}`);
+    throw Errors.InvalidPermissionToEditVideo;
   }
 
-  return await generatePresignedUrlUploadThumbnail(videoId);
+  try {
+    const url = await generatePresignedUrlUploadThumbnail(videoId);
+    console.log(`INFO/BusinessLayer/video.ts/uploadVideo Presigned url to upload thumbnail file for video with id ${videoId} has been generated`);
+    return url;
+  }
+  catch (e) {
+    console.log(`ERROR/BusinessLayer/video.ts/uploadVideo Unknown error when generating presigned url to upload thumbnail file for video with id ${videoId}. Error: ${e.message}`);
+    throw Errors.UnknownError(e.message);
+  }
 };
 
-export const getVideos = async (query: { userId?: string, title?: string, limit?: string, nextKey?: string }) => {
+/**
+ * @param {string} query.userId? Id of user who is owner of videos to get
+ * @param {string} query.title? Subtitle that is contained in videos title
+ * @param {string} query.limit? Limit number of videos for each batch
+ * @param {string} query.nextKey? Key for next batch of videos
+ * @returns {Promise<{videos: ShortFormVideo[], nextKey: string}>}
+ * @throws {Errors.LimitMustBeNumber, Errors.LimitMustBeGreaterThan0, Errors.InvalidNextKey, Errors.UserNotFound, Errors.UnknownError}
+ * */
+export const getVideos = async (query: { userId?: string, title?: string, limit?: string, nextKey?: string }):
+  Promise<{videos: ShortFormVideo[], nextKey: string}> => {
   let limit = query.limit || 10;
   if (typeof limit === 'string') {
     limit = parseInt(limit);
     if (isNaN(limit)) {
-      throw new Error(GetVideosError.LIMIT_MUST_BE_NUMBER);
+      console.log(`INFO/BusinessLayer/video.ts/getVideos The limit parameter must be number. Current value: ${query.limit}`);
+      throw Errors.LimitMustBeNumber;
     }
 
     if (limit <= 0) {
-      throw new Error(GetVideosError.LIMIT_MUST_BE_GREATER_THAN_0);
+      console.log(`INFO/BusinessLayer/video.ts/getVideos The limit parameter must be smaller than 0. Current value: ${query.limit}`);
+      throw Errors.LimitMustBeGreaterThan0;
     }
   }
 
@@ -131,69 +170,83 @@ export const getVideos = async (query: { userId?: string, title?: string, limit?
       console.log('nextKey', nextKey);
     }
     catch (e) {
-      console.log(e);
-      throw new Error(GetVideosError.NEXT_KEY_INVALID);
+      console.log(`ERROR/BusinessLayer/video.ts/getVideos Invalid next key. Current value: ${nextKey}. Error: ${e.message}`);
+      throw Errors.InvalidNextKey;
     }
 
     if (!(nextKey as any).id) {
-      throw new Error(GetVideosError.NEXT_KEY_INVALID);
+      console.log(`ERROR/BusinessLayer/video.ts/getVideos Invalid next key. Current value: ${nextKey}. Current value: ${nextKey}`);
+      throw Errors.InvalidNextKey;
     }
   }
 
   const title = query.title || '';
-  let result;
+  let result: {videos: ShortFormVideo[], nextKey: string};
   if (query.userId) {
     const user = await getProfile(query.userId);
-    if (!user) {
-      throw new Error(GetVideosError.FOUND_NO_USER);
+    try {
+      result = await fetchVideosByUserId(user.id, title, limit, nextKey);
     }
-    result = await fetchVideosByUserId(query.userId, title, limit, nextKey);
+    catch (e) {
+      console.log(`ERROR/BusinessLayer/video.ts/getVideos Unknown error when fetch videos by user id. Error: ${e.message}`);
+      throw Errors.UnknownError(e.message);
+    }
   }
   else {
-    result = await fetchVideos(title, limit, nextKey);
+    try {
+      result = await fetchVideos(title, limit, nextKey);
+    }
+    catch (e) {
+      console.log(`ERROR/BusinessLayer/video.ts/getVideos Unknown error when fetch videos. Error: ${e.message}`);
+      throw Errors.UnknownError(e.message);
+    }
   }
 
   for (const video of result.videos) {
     video.username = (await getProfile(video.userId)).username;
   }
+  console.log(`INFO/BusinessLayer/video.ts/getVideos Videos have been retrieved`);
   return result;
 };
 
+/**
+ * @param {string} videoId Id of video to delete
+ * @param {string} userId Id of user who is owner
+ * @throws {Errors.UserNotFound, Errors.VideoNotFound, Errors.InvalidPermissionToEditVideo, Errors.UnknownError}
+ * */
 export const deleteVideo = async (videoId: string, userId: string) => {
   const user = await getProfile(userId);
-  if (!user) {
-    throw new Error(DeleteVideoErrors.FOUND_NO_USER);
-  }
-
   const video = await findVideoById(videoId);
-  if (!video) {
-    throw new Error(DeleteVideoErrors.FOUND_NO_VIDEO);
-  }
 
   if (video.userId !== user.id) {
-    throw new Error(DeleteVideoErrors.INVALID_PERMISSION);
+    throw Errors.InvalidPermissionToEditVideo;
   }
 
-  return await removeVideo(videoId);
+  try {
+    await removeVideo(videoId);
+  }
+  catch (e) {
+    throw Errors.UnknownError(e.message);
+  }
 };
 
+/**
+ * @param {string} videoId Id of video to update
+ * @param {string} userId Id of user who is owner
+ * @param {string} title New title
+ * @param {string} description New description
+ * @throws {Errors.UserNotFound, Errors.VideoNotFound, Errors.InvalidPermissionToEditVideo, Errors.InvalidTitle, Errors.UnknownError}
+ * */
 export const updateVideo = async (videoId: string, userId: string, title: string, description: string) => {
   const user = await getProfile(userId);
-  if (!user) {
-    throw new Error(UpdateVideoErrors.FOUND_NO_USER);
-  }
-
   const video = await findVideoById(videoId);
-  if (!video) {
-    throw new Error(UpdateVideoErrors.FOUND_NO_VIDEO);
-  }
 
   if (video.userId !== user.id) {
-    throw new Error(UpdateVideoErrors.INVALID_PERMISSION);
+    throw Errors.InvalidPermissionToEditVideo;
   }
 
   if (!title.trim()) {
-    throw new Error(UpdateVideoErrors.INVALID_TITLE);
+    throw Errors.InvalidTitle;
   }
 
   const updated = {};
@@ -205,51 +258,72 @@ export const updateVideo = async (videoId: string, userId: string, title: string
     updated['description'] = description.trim();
   }
 
-  return await _updateVideo(videoId, updated);
+  try {
+    return await _updateVideo(videoId, updated);
+  }
+  catch (e) {
+    throw Errors.UnknownError(e.message);
+  }
 };
 
 export const updateVideoContent = async (key: string) => {
   const id = key.split('.')[0];
   const video = await findVideoById(id);
   if (!video) {
-    throw new Error(SyncVideoUpdatedTimeErrors.FOUND_NO_VIDEO);
+    throw Errors.VideoNotFound;
   }
 
-  return await _updateVideo(id, { content: true });
+  try {
+    return await _updateVideo(id, { content: true });
+  }
+  catch (e) {
+    throw Errors.UnknownError(e.message);
+  }
 };
 
+/**
+ * @param {string} videoId Id of video that is being reacted
+ * @param {string} userId Id of user who is reacting
+ * @param {'likes' | 'dislikes'} reaction Reaction type
+ * @throws {Errors.UserNotFound, Errors.VideoNotFound, Errors.UnknownError}
+ * */
 export const reactVideo = async (videoId: string, userId: string, reaction: 'likes' | 'dislikes') => {
   const user = await getProfile(userId);
-  if (!user) {
-    throw new Error(ReactVideoErrors.FOUND_NO_USER);
-  }
-
   const video = await findVideoById(videoId);
-  if (!video) {
-    throw new Error(ReactVideoErrors.FOUND_NO_VIDEO);
+  try {
+    return await _reactVideo(video.id, user.id, reaction);
   }
-
-  return await _reactVideo(videoId, userId, reaction);
+  catch (e) {
+    throw Errors.UnknownError(e.message);
+  }
 };
 
+/**
+ * @param {string} videoId Id of video that is being unreacted
+ * @param {string} userId Id of user who is unreacting
+ * @param {'likes' | 'dislikes'} reaction Original reaction type
+ * @throws {Errors.UserNotFound, Errors.VideoNotFound, Errors.UnknownError}
+ * */
 export const unreactVideo = async (videoId: string, userId: string, reaction: 'likes' | 'dislikes') => {
   const user = await getProfile(userId);
-  if (!user) {
-    throw new Error(ReactVideoErrors.FOUND_NO_USER);
-  }
-
   const video = await findVideoById(videoId);
-  if (!video) {
-    throw new Error(ReactVideoErrors.FOUND_NO_VIDEO);
+  try {
+    return await _unreactVideo(video.id, user.id, reaction);
   }
-
-  return await _unreactVideo(videoId, userId, reaction);
+  catch (e) {
+    throw Errors.UnknownError(e.message);
+  }
 }
 
 export const resizeThumbnail = async (key: string) => {
   const buffer = await resizeImage(`https://udatube-thumbnails-dev.s3.amazonaws.com/${key}`, 800, 450);
   if (!buffer) {
-    return
+    throw Errors.InvalidImage;
   }
-  return await resizeThumbnailToS3(buffer, key);
+  try {
+    return await resizeThumbnailToS3(buffer, key);
+  }
+  catch (e) {
+    throw Errors.UnknownError(e.message);
+  }
 };

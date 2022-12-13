@@ -1,8 +1,8 @@
 import {APIGatewayProxyEvent, APIGatewayProxyResult, Handler} from "aws-lambda";
 import {middyfy} from "@libs/lambda";
 import {getVideos} from "../../businessLayer/video";
-import GetVideosErrors from "../../errors/GetVideosErrors";
 import cors from "@middy/http-cors";
+import {errorResponse} from "../../errors/Errors";
 
 const GetVideos: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (event) => {
   let {queryStringParameters} = event;
@@ -23,25 +23,7 @@ const GetVideos: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = async (e
   }
   catch (e) {
     console.log(e);
-
-    switch (e.message) {
-      case GetVideosErrors.LIMIT_MUST_BE_NUMBER:
-      case GetVideosErrors.LIMIT_MUST_BE_GREATER_THAN_0:
-      case GetVideosErrors.NEXT_KEY_INVALID:
-        return {
-          statusCode: 400,
-          body: JSON.stringify({
-            message: e.message,
-          }),
-        };
-      default:
-        return {
-          statusCode: 500,
-          body: JSON.stringify({
-            message: 'Internal Server Error',
-          }),
-        };
-    }
+    return errorResponse(e);
   }
 };
 
