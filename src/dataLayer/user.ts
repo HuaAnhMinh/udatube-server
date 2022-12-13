@@ -1,4 +1,6 @@
 import * as AWS from 'aws-sdk';
+// @ts-ignore
+import {AWSError} from 'aws-sdk';
 import { DocumentClient } from 'aws-sdk/clients/dynamodb'
 import * as AWSXRay from 'aws-xray-sdk'
 import {ShortFormUser, User} from "../models/user";
@@ -13,9 +15,9 @@ const AVATARS_BUCKET = process.env.AVATARS_BUCKET;
 const AVATAR_SIGNED_URL_EXPIRATION = process.env.AVATAR_SIGNED_URL_EXPIRATION;
 
 /**
- * 
  * @param {string} id The id of user to create 
- * @returns {User} The created user
+ * @returns {Promise<User>} The created user
+ * @throws {AWSError}
  */
 export const createUser = async (id: string): Promise<User> => {
   const defaultUsername = `user-${id.substring(0, 8)}`;
@@ -48,8 +50,8 @@ export const createUser = async (id: string): Promise<User> => {
 
 /**
  * @param {string} id The id of user to get
- *
  * @returns {Promise<User>} user with passed id
+ * @throws {AWSError}
  */
 export const getUserById = async (id: string): Promise<User> => {
   const result = await docClient.get({
@@ -89,6 +91,11 @@ export const getUsersByUsername = async (username: string, limit: number, nextKe
   };
 };
 
+/**
+ * @param {string} userId id of user that is subscribing
+ * @param {string} targetUserId id of user that is going to be subscribed
+ * @throws {AWSError}
+ * */
 export const subscribeToUser = async (userId: string, targetUserId: string) => {
   await docClient.update({
     TableName: USERS_TABLE,
@@ -117,6 +124,11 @@ export const subscribeToUser = async (userId: string, targetUserId: string) => {
   console.log(`INFO/DataLayer/user.ts/subscribeToUser total subscribers of target user with id ${targetUserId} has been increased`);
 };
 
+/**
+ * @param {string} userId id of user that is unsubscribing
+ * @param {string} targetUserId id of user that is going to be unsubscribed
+ * @throws {AWSError}
+ * */
 export const unsubscribeFromUser = async (userId: string, targetUserId: string) => {
   const user = await getUserById(userId);
   const subscribedChannels = user.subscribedChannels.filter((id) => id !== targetUserId);
@@ -148,6 +160,11 @@ export const unsubscribeFromUser = async (userId: string, targetUserId: string) 
   console.log(`INFO/DataLayer/user.ts/unsubscribeFromUser total subscribers of target user with id ${targetUserId} has been decreased`);
 }
 
+/**
+ * @param {string} userId user that is changing username
+ * @param {string} newUsername new username
+ * @throws {AWSError}
+ * */
 export const changeUsername = async (userId: string, newUsername: string) => {
   await docClient.update({
     TableName: USERS_TABLE,
@@ -163,7 +180,12 @@ export const changeUsername = async (userId: string, newUsername: string) => {
   console.log(`INFO/DataLayer/user.ts/changeUsername User with id ${userId} has renamed username to ${newUsername}`);
 };
 
-export const generatePresignedUrlForAvatar = async (userId: string) => {
+/**
+ * @param {string} userId id of user that is changing avatar
+ * @returns {string} presinged url to change avatar
+ * @throws {AWSError}
+ * */
+export const generatePresignedUrlForAvatar = async (userId: string): Promise<string> => {
   return await s3.getSignedUrlPromise('putObject', {
     Bucket: AVATARS_BUCKET,
     Key: `${userId}.png`,
@@ -172,11 +194,13 @@ export const generatePresignedUrlForAvatar = async (userId: string) => {
   });
 };
 
-export const getSubscribedChannels = async (userId: string) => {
+/**
+ * @param {string} userId user that is fetching list subscribed users
+ * @returns {ShortFormUser[]} list subscribed users
+ * @throws {AWSError}
+ * */
+export const getSubscribedChannels = async (userId: string): Promise<ShortFormUser[]> => {
   const user = await getUserById(userId);
-  if (!user) {
-    return null;
-  }
 
   if (user.subscribedChannels.length === 0) {
     return [];
@@ -196,6 +220,11 @@ export const getSubscribedChannels = async (userId: string) => {
   return result.Responses[USERS_TABLE] as ShortFormUser[];
 };
 
+/**
+ * @param {Uint8Array} image avatar image buffer binary
+ * @param {string} key avatar key in S3
+ * @throws {AWSError}
+ * */
 export const resizeAvatarToS3 = async (image: Buffer, key: string) => {
   return await s3.putObject({
     Bucket: AVATARS_BUCKET,

@@ -11,13 +11,11 @@ import {
 } from "../dataLayer/user";
 import {resizeImage} from "@libs/image";
 import Errors, {ErrorFormat} from "../errors/Errors";
-import {User} from "../models/user";
+import {ShortFormUser, User} from "../models/user";
 
 /**
  * @param {string} id The id of user to get
- *
- * @returns {User} User with passed id
- *
+ * @returns {Promise<User>} User with passed id
  * @throws {Errors.UserNotFound}
  * */
 export const getProfile = async (id: string): Promise<User> => {
@@ -40,7 +38,7 @@ export const getProfile = async (id: string): Promise<User> => {
 /**
  * 
  * @param {string} id The id of user to create
- * @returns {User} created user
+ * @returns {Promise<User>} created user
  * @throws {Errors.UserNotFound, Errors.UnknownError}
  */
 export const createUser = async (id: string): Promise<User> => {
@@ -67,10 +65,11 @@ export const createUser = async (id: string): Promise<User> => {
 
 /**
  * @param {{string, string, string}} query the query details to get data, including: username (string), limit (string), nextKey (string)
- * @returns {ShortFormUser[], string | null} users and nextKey for next batch users
+ * @returns {Promise<{ users: ShortFormUser[], nextKey: string | null }} users and nextKey for next batch users
  * @throws {Errors.LimitMustBeNumber, Errors.LimitMustBeGreaterThan0, Errors.InvalidNextKey, Errors.UnknownError}
  * */
-export const searchUsers = async (query: { username?: string, limit?: string, nextKey?: string }) => {
+export const searchUsers = async (query: { username?: string, limit?: string, nextKey?: string }):
+  Promise<{ users: ShortFormUser[], nextKey: string | null }> => {
   const username = query.username || '';
   let limit = query.limit || 10;
   if (typeof limit === 'string') {
@@ -201,10 +200,10 @@ export const editUsername = async (userId: string, newUsername: string) => {
 
 /**
  * @param {string} userId id of user that is changing avatar
- * @returns {string} presigned url to change avatar
+ * @returns {Promise<string>} presigned url to change avatar
  * @throws {Errors.UserNotFound, Errors.UnknownError}
  * */
-export const changeAvatar = async (userId: string) => {
+export const changeAvatar = async (userId: string): Promise<string> => {
   await getProfile(userId);
 
   try {
