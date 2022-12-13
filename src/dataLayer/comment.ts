@@ -1,5 +1,7 @@
 import {createHash} from 'crypto';
 import * as AWS from "aws-sdk";
+// @ts-ignore
+import {AWSError} from 'aws-sdk';
 import { DocumentClient } from 'aws-sdk/clients/dynamodb'
 import * as AWSXRay from 'aws-xray-sdk'
 import {v4} from "uuid";
@@ -11,6 +13,13 @@ const docClient: DocumentClient = new XAWS.DynamoDB.DocumentClient();
 const COMMENTS_TABLE = process.env.COMMENTS_TABLE;
 const COMMENTS_TABLE_INDEX = process.env.COMMENTS_TABLE_INDEX;
 
+/**
+ * @param {string} userId Id of user who is commenting
+ * @param {string} videoId Id of video which is being commented
+ * @param {string} content Content of comment
+ * @returns {Comment} created comment
+ * @throws {AWSError}
+ * */
 export const createComment = async (userId: string, videoId: string, content: string) => {
   const createdAt = new Date().toISOString();
   const newComment: Comment = {
@@ -32,6 +41,13 @@ export const createComment = async (userId: string, videoId: string, content: st
   return newComment;
 };
 
+/**
+ * @param {string} videoId Id of video to get comments
+ * @param {number} limit Limit number of comments each batch
+ * @param {any} nextKey Key to next batch of comments
+ * @returns {Promise<{ comments: Comment[], nextKey: string | null }>}
+ * @throws {AWSError}
+ * */
 export const findCommentsByVideoId = async (videoId: string, limit?: number, nextKey?: any): Promise<{ comments: Comment[], nextKey: string | null }> => {
   const query: DocumentClient.QueryInput = {
     TableName: COMMENTS_TABLE,
@@ -61,6 +77,11 @@ export const findCommentsByVideoId = async (videoId: string, limit?: number, nex
   };
 };
 
+/**
+ * @param {string} id Id of comment
+ * @returns {Promise<Comment | null>}
+ * @throws {AWSError}
+ * */
 export const findCommentById = async (id: string): Promise<Comment | null> => {
   return (await docClient.get({
     TableName: COMMENTS_TABLE,
@@ -70,6 +91,10 @@ export const findCommentById = async (id: string): Promise<Comment | null> => {
   }).promise()).Item as Comment;
 };
 
+/**
+ * @param {string} id Id of comment to delete
+ * @throws {AWSError}
+ * */
 export const deleteComment = async (id: string) => {
   await docClient.delete({
     TableName: COMMENTS_TABLE,
@@ -78,9 +103,14 @@ export const deleteComment = async (id: string) => {
     },
   }).promise();
 
-  console.log(`INFO/DataLayer/comment.ts/findCommentById Comment with id ${id} has been retrieved`);
+  console.log(`INFO/DataLayer/comment.ts/findCommentById Comment with id ${id} has been deleted`);
 };
 
+/**
+ * @param {string} id Id of comment to update
+ * @param {string} content New content
+ * @throws {AWSError}
+ * */
 export const updateComment = async (id: string, content: string) => {
   await docClient.update({
     TableName: COMMENTS_TABLE,

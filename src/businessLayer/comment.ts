@@ -7,33 +7,65 @@ import {
   findCommentsByVideoId as findComments,
   updateComment as _updateComment,
 } from '../dataLayer/comment';
-import CreateCommentErrors from "../errors/CreateCommentErrors";
-import GetCommentsErrors from "../errors/GetCommentsErrors";
-import DeleteCommentErrors from "../errors/DeleteCommentErrors";
-import UpdateCommentErrors from "../errors/UpdateCommentErrors";
-import FindCommentErrors from "../errors/FindCommentErrors";
+import {Comment} from "../models/comment";
+import Errors from "../errors/Errors";
+import console from "console";
 
-export const findCommentById = async (commentId: string) => {
-  const comment = await _findCommentById(commentId);
+/**
+ * @param {string} commentId Id of comment to get
+ * @returns {Promise<Comment>}
+ * @throws {Errors.CommentNotFound, Errors.UnknownError}
+ * */
+export const findCommentById = async (commentId: string): Promise<Comment> => {
+  let comment: Comment;
+  try {
+    comment = await _findCommentById(commentId);
+  }
+  catch (e) {
+    throw Errors.UnknownError(e.message);
+  }
+
   if (!comment) {
-    throw new Error(FindCommentErrors.FOUND_NO_COMMENT);
+    throw Errors.CommentNotFound;
   }
   return comment;
 };
 
-export const createComment = async (userId: string, videoId: string, content: string) => {
+/**
+ * @param {string} userId Id of user who is commenting
+ * @param {string} videoId Id of video which is being commented
+ * @param {string} content Comment content
+ * @returns {Promise<Comment>}
+ * @throws {Errors.CommentIsEmpty, Errors.UserNotFound, Errors.VideoNotFound, Errors.UnknownError}
+ * */
+export const createComment = async (userId: string, videoId: string, content: string): Promise<Comment> => {
   const user = await getProfile(userId);
-
   const video = await findVideoById(videoId);
 
   if (!content.trim()) {
-    throw new Error(CreateCommentErrors.CONTENT_IS_EMPTY);
+    console.log(`INFO/BusinessLayer/comment.ts/createComment User with id ${user.id} cannot create empty comment`);
+    throw Errors.CommentIsEmpty;
   }
 
-  return await _createComment(user.id, video.id, content.trim());
+  try {
+    const comment = await _createComment(user.id, video.id, content.trim());
+    console.log(`INFO/BusinessLayer/comment.ts/createComment Comment with id ${comment.id} has been created by user with id ${user.id}`);
+    return comment;
+  }
+  catch (e) {
+    throw Errors.UnknownError(e.message);
+  }
 };
 
-export const getComments = async (query: { videoId?: string; limit?: string; nextKey?: string }) => {
+/**
+ * @param {string} query.videoId? Id of video to get comments
+ * @param {string} query.limit? Limit number of comments each batch
+ * @param {string} query.nextKey? Key to next batch of comments
+ * @returns {Promise<{comments: Comment[], nextKey: string}>}
+ * @throws {Errors.VideoNotFound, Errors.LimitMustBeNumber, Errors.LimitMustBeGreaterThan0, Errors.InvalidNextKey, Errors.UserNotFound, Errors.UnknownError}
+ * */
+export const getComments = async (query: { videoId?: string; limit?: string; nextKey?: string }):
+  Promise<{comments: Comment[], nextKey: string}> => {
   const videoId = query.videoId;
   const video = await findVideoById(videoId);
 
@@ -41,11 +73,13 @@ export const getComments = async (query: { videoId?: string; limit?: string; nex
   if (typeof limit === 'string') {
     limit = parseInt(limit);
     if (isNaN(limit)) {
-      throw new Error(GetCommentsErrors.LIMIT_MUST_BE_NUMBER);
+      console.log(`INFO/BusinessLayer/comment.ts/getComments The limit parameter must be number. Current value: ${query.limit}`);
+      throw Errors.LimitMustBeNumber;
     }
 
     if (limit <= 0) {
-      throw new Error(GetCommentsErrors.LIMIT_MUST_BE_GREATER_THAN_0);
+      console.log(`INFO/BusinessLayer/comment.ts/getComments The limit parameter must be smaller than 0. Current value: ${query.limit}`);
+      throw Errors.LimitMustBeGreaterThan0;
     }
   }
 
@@ -57,57 +91,89 @@ export const getComments = async (query: { videoId?: string; limit?: string; nex
       nextKey = JSON.parse(uriDecoded);
       console.log('nextKey', nextKey);
     } catch (e) {
-      console.log(e);
-      throw new Error(GetCommentsErrors.NEXT_KEY_INVALID);
+      console.log(`ERROR/BusinessLayer/comment.ts/getComments Invalid next key. Current value: ${nextKey}. Error: ${e.message}`);
+      throw Errors.InvalidNextKey;
     }
 
     if (!(nextKey as any).id) {
-      throw new Error(GetCommentsErrors.NEXT_KEY_INVALID);
+      console.log(`INFO/BusinessLayer/comment.ts/getComments Invalid next key. Current value: ${nextKey}. Current value: ${nextKey}`);
+      throw Errors.InvalidNextKey;
     }
   }
 
-  const result = await findComments(video.id, limit, nextKey);
-  for (const comment of result.comments) {
-    comment.username = (await getProfile(comment.userId)).username;
+  let result: {comments: Comment[], nextKey: string};
+  try {
+    result = await findComments(video.id, limit, nextKey);
   }
+  catch (e) {
+    console.log(`ERROR/BusinessLayer/comment.ts/getComments Unknown error when fetch comments. Error: ${e.message}`);
+    throw Errors.UnknownError(e.message);
+  }
+
+  for (const comment of result.comments) {
+    try {
+      comment.username = (await getProfile(comment.userId)).username;
+    }
+    catch (e) {
+      console.log(e);
+    }
+  }
+
+  console.log(`INFO/BusinessLayer/comment.ts/getComments Comments have been retrieved`);
   return result;
 };
 
+/**
+ * @param {string} id Id of comment to delete
+ * @param {string} userId Id of user who commented
+ * @throws {Errors.UserNotFound, Errors.CommentNotFound, Errors.InvalidPermissionToModifyComment, Errors.UnknownError}
+ * */
 export const deleteComment = async (id: string, userId: string) => {
   const user = await getProfile(userId);
-
   const comment = await findCommentById(id);
-  if (!comment) {
-    throw new Error(DeleteCommentErrors.FOUND_NO_COMMENT);
-  }
 
   if (comment.userId !== user.id) {
-    throw new Error(DeleteCommentErrors.INVALID_PERMISSION);
+    console.log(`INFO/BusinessLayer/comment.ts/deleteComment User with id ${user.id} cannot delete comment created by user with id ${comment.id}`);
+    throw Errors.InvalidPermissionToModifyComment;
   }
 
-  return await _deleteComment(id);
+  try {
+    await _deleteComment(id);
+    console.log(`INFO/BusinessLayer/comment.ts/deleteComment Comment with id ${comment.id} has been deleted`);
+  }
+  catch (e) {
+    console.log(`ERROR/BusinessLayer/comment.ts/deleteComment Unknown error when deleting comment with id ${comment.id}. Error: ${e.message}`);
+    throw Errors.UnknownError(e.message);
+  }
 };
 
+/**
+ * @param {string} id Id of comment to update
+ * @param {string} userId Id of user who commented
+ * @param {string} content New content
+ * @throws {Errors.UserNotFound, Errors.CommentNotFound, Errors.InvalidPermissionToModifyComment, Errors.CommentIsEmpty, Errors.UnknownError}
+ * */
 export const updateComment = async (id: string, userId: string, content: string) => {
   const user = await getProfile(userId);
-  if (!user) {
-    throw new Error(UpdateCommentErrors.FOUND_NO_USER);
-  }
-
   const comment = await findCommentById(id);
-  if (!comment) {
-    throw new Error(UpdateCommentErrors.FOUND_NO_COMMENT);
-  }
-
-  if (comment.userId !== userId) {
-    throw new Error(UpdateCommentErrors.INVALID_PERMISSION);
+  if (comment.userId !== user.id) {
+    console.log(`INFO/BusinessLayer/comment.ts/updateComment User with id ${user.id} cannot update comment created by user with id ${comment.id}`);
+    throw Errors.InvalidPermissionToModifyComment;
   }
 
   if (!content.trim()) {
-    throw new Error(UpdateCommentErrors.CONTENT_IS_EMPTY);
+    console.log(`INFO/BusinessLayer/comment.ts/updateComment User with id ${user.id} cannot update comment with id ${comment.id} to empty comment`);
+    throw Errors.CommentIsEmpty;
   }
 
-  if (comment.content !== content.trim()) {
-    await _updateComment(id, content.trim());
+  try {
+    if (comment.content !== content.trim()) {
+      await _updateComment(id, content.trim());
+      console.log(`INFO/BusinessLayer/comment.ts/updateComment Comment with id ${comment.id} has been updated to content: ${content}`);
+    }
+  }
+  catch (e) {
+    console.log(`ERROR/BusinessLayer/comment.ts/updateComment Unknown error when updating comment with id ${comment.id}. Error: ${e.message}`);
+    throw Errors.UnknownError(e.message);
   }
 };

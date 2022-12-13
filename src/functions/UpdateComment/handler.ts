@@ -3,8 +3,8 @@ import schema from "@functions/UpdateComment/schema";
 import {middyfy} from "@libs/lambda";
 import {getUserId} from "@functions/Authorizer/utils";
 import {updateComment} from "../../businessLayer/comment";
-import UpdateCommentErrors from "../../errors/UpdateCommentErrors";
 import cors from "@middy/http-cors";
+import {errorResponse} from "../../errors/Errors";
 
 const UpdateComment: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async (event) => {
   try {
@@ -22,37 +22,7 @@ const UpdateComment: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async (
   }
   catch (e) {
     console.log(e);
-    switch (e.message) {
-      case UpdateCommentErrors.CONTENT_IS_EMPTY:
-        return {
-          statusCode: 400,
-          body: JSON.stringify({
-            message: e.message,
-          }),
-        };
-      case UpdateCommentErrors.FOUND_NO_COMMENT:
-      case UpdateCommentErrors.FOUND_NO_USER:
-        return {
-          statusCode: 404,
-          body: JSON.stringify({
-            message: e.message,
-          }),
-        };
-      case UpdateCommentErrors.INVALID_PERMISSION:
-        return {
-          statusCode: 403,
-          body: JSON.stringify({
-            message: e.message,
-          }),
-        };
-      default:
-        return {
-          statusCode: 500,
-          body: JSON.stringify({
-            message: 'Internal Server Error',
-          }),
-        };
-    }
+    return errorResponse(e);
   }
 };
 

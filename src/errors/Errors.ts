@@ -68,4 +68,16 @@ export default {
     statusCode: 403,
     message: `You don't have the permission to modify this video`,
   } as ErrorFormat,
+  CommentNotFound: {
+    statusCode: 404,
+    message: `Comment not found`,
+  } as ErrorFormat,
+  CommentIsEmpty: {
+    statusCode: 400,
+    message: `Comment cannot be empty`,
+  } as ErrorFormat,
+  InvalidPermissionToModifyComment: {
+    statusCode: 403,
+    message: `You do not have permission to modify this comment`,
+  } as ErrorFormat,
 }
