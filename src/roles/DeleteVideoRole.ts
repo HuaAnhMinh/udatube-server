@@ -25,7 +25,7 @@ export default {
             'dynamodb:UpdateItem',
           ],
           Resource: [
-            'arn:aws:dynamodb:us-east-1:*:table/${self:provider.environment.USERS_TABLE}',
+            'arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_TABLE}',
           ],
         }, {
           Effect: 'Allow',
@@ -34,7 +34,7 @@ export default {
             'dynamodb:GetItem',
           ],
           Resource: [
-            'arn:aws:dynamodb:us-east-1:*:table/${self:provider.environment.VIDEOS_TABLE}',
+            'arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOS_TABLE}',
           ],
         }, {
           Effect: 'Allow',
@@ -52,7 +52,7 @@ export default {
             'dynamodb:DeleteItem',
           ],
           Resource: [
-            'arn:aws:dynamodb:us-east-1:*:table/${self:provider.environment.COMMENTS_TABLE}',
+            'arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.COMMENTS_TABLE}',
           ],
         }, {
           Effect: 'Allow',
@@ -60,8 +60,8 @@ export default {
             'dynamodb:Query',
           ],
           Resource: [
-            'arn:aws:dynamodb:us-east-1:*:table/${self:provider.environment.COMMENTS_TABLE}',
-            'arn:aws:dynamodb:us-east-1:*:table/${self:provider.environment.COMMENTS_TABLE}/index/${self:provider.environment.COMMENTS_TABLE_INDEX}'
+            'arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.COMMENTS_TABLE}',
+            'arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.COMMENTS_TABLE}/index/${self:provider.environment.COMMENTS_TABLE_INDEX}'
           ],
         }],
       },

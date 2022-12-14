@@ -24,7 +24,7 @@ const ViewProfileRole = {
             'dynamodb:GetItem',
           ],
           Resource: [
-            'arn:aws:dynamodb:us-east-1:*:table/${self:provider.environment.USERS_TABLE}',
+            'arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_TABLE}',
           ],
         }],
       },

@@ -25,7 +25,7 @@ export default {
             'dynamodb:GetItem',
           ],
           Resource: [
-            'arn:aws:dynamodb:us-east-1:*:table/${self:provider.environment.VIDEOS_TABLE}',
+            'arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOS_TABLE}',
           ],
         }],
       },

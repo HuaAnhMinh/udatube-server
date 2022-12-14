@@ -4,7 +4,7 @@ const LogRole = [{
     "logs:CreateLogGroup"
   ],
   Resource: [
-    "arn:aws:logs:us-east-1:${aws:accountId}:log-group:/aws/lambda/udatube-*:*"
+    "arn:aws:logs:${self:provider.region}:${aws:accountId}:log-group:/aws/lambda/udatube-*:*"
   ],
   Effect: "Allow"
 }, {
@@ -12,7 +12,7 @@ const LogRole = [{
     "logs:PutLogEvents"
   ],
   Resource: [
-    "arn:aws:logs:us-east-1:${aws:accountId}:log-group:/aws/lambda/udatube-*:*:*"
+    "arn:aws:logs:${self:provider.region}:${aws:accountId}:log-group:/aws/lambda/udatube-*:*:*"
   ],
   Effect: "Allow"
 }];

@@ -75,6 +75,7 @@ const serverlessConfiguration: AWS = {
       restApi: true,
     },
     stage: '${opt:stage, "dev"}',
+    region: 'ap-southeast-1',
     tracing: {
       lambda: true,
       apiGateway: true,
@@ -369,22 +370,6 @@ const serverlessConfiguration: AWS = {
           },
         },
       },
-      AvatarsS3BucketPolicy: {
-        Type: 'AWS::S3::BucketPolicy',
-        Properties: {
-          PolicyDocument: {
-            Id: '${self:provider.environment.AVATARS_BUCKET}-policy',
-            Version: '2012-10-17',
-            Statement: [{
-              Effect: 'Allow',
-              Principal: '*',
-              Action: 's3:*',
-              Resource: 'arn:aws:s3:::${self:provider.environment.AVATARS_BUCKET}/*',
-            }],
-          },
-          Bucket: '${self:provider.environment.AVATARS_BUCKET}',
-        },
-      },
       VideosS3Bucket: {
         Type: 'AWS::S3::Bucket',
         Properties: {
@@ -405,22 +390,6 @@ const serverlessConfiguration: AWS = {
               MaxAge: 3000,
             }],
           },
-        },
-      },
-      VideosS3BucketPolicy: {
-        Type: 'AWS::S3::BucketPolicy',
-        Properties: {
-          PolicyDocument: {
-            Id: '${self:provider.environment.VIDEOS_BUCKET}-policy',
-            Version: '2012-10-17',
-            Statement: [{
-              Effect: 'Allow',
-              Principal: '*',
-              Action: 's3:*',
-              Resource: 'arn:aws:s3:::${self:provider.environment.VIDEOS_BUCKET}/*',
-            }],
-          },
-          Bucket: '${self:provider.environment.VIDEOS_BUCKET}',
         },
       },
       ThumbnailsS3Bucket: {
@@ -445,8 +414,43 @@ const serverlessConfiguration: AWS = {
           },
         },
       },
+      AvatarsS3BucketPolicy: {
+        Type: 'AWS::S3::BucketPolicy',
+        DependsOn: ['AvatarsS3Bucket'],
+        Properties: {
+          PolicyDocument: {
+            Id: '${self:provider.environment.AVATARS_BUCKET}-policy',
+            Version: '2012-10-17',
+            Statement: [{
+              Effect: 'Allow',
+              Principal: '*',
+              Action: 's3:*',
+              Resource: 'arn:aws:s3:::${self:provider.environment.AVATARS_BUCKET}/*',
+            }],
+          },
+          Bucket: '${self:provider.environment.AVATARS_BUCKET}',
+        },
+      },
+      VideosS3BucketPolicy: {
+        Type: 'AWS::S3::BucketPolicy',
+        DependsOn: ['VideosS3Bucket'],
+        Properties: {
+          PolicyDocument: {
+            Id: '${self:provider.environment.VIDEOS_BUCKET}-policy',
+            Version: '2012-10-17',
+            Statement: [{
+              Effect: 'Allow',
+              Principal: '*',
+              Action: 's3:*',
+              Resource: 'arn:aws:s3:::${self:provider.environment.VIDEOS_BUCKET}/*',
+            }],
+          },
+          Bucket: '${self:provider.environment.VIDEOS_BUCKET}',
+        },
+      },
       ThumbnailsS3BucketPolicy: {
         Type: 'AWS::S3::BucketPolicy',
+        DependsOn: ['ThumbnailsS3Bucket'],
         Properties: {
           PolicyDocument: {
             Id: '${self:provider.environment.THUMBNAILS_BUCKET}-policy',
